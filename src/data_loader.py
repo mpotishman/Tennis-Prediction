@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from features import create_two_rows
 
 directory_path = "data/raw"
 
@@ -18,7 +19,8 @@ for filename in os.listdir(directory_path):
     
 all_data = pd.concat(all_data)
 all_data = all_data.sort_values("tourney_date")
-all_data.to_csv("data/processed/combined.csv", index=False)
-
 
 print(f'Total rows expected for combined csv is {expected_total_rows}, actual number of rows is {len(all_data)}')
+
+all_data = create_two_rows(all_data)
+all_data.to_csv("data/processed/combined.csv", index=False)
