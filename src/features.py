@@ -14,9 +14,6 @@ tourney_k = {
 }
 
 
-# create a last match played that will be {player : last match date}
-last_matchday = {}
-
 # create a function to work out the amount of days between this game and last game
 
 
@@ -37,11 +34,8 @@ def days_between(match, player_name, last_matchday):
 # now create a function to get the number of minutes played in the last 7 days
 
 
-# create a function to get the elo of each player, this is done on the RAW dataset, before it creates 2 rows for each match since otherwise the updated elo would affect the second row of the SAME game - in data_loader.py, before calling .create_two_rows(), you would call this function
-# first create an ELO dictionary that will be {player : ELO}
-players_elo = {}
 
-
+# calculate the new elo after winning or losing - done by first getting the players expected win percentage, then feeding that into a formula to update player elo, then updating the dictionary containing players elo
 def calculate_elo(match, player_name, opponent_name, players_elo, tourney_k_value):
     if player_name not in players_elo:
         players_elo[player_name] = 1500
@@ -66,22 +60,20 @@ def calculate_elo(match, player_name, opponent_name, players_elo, tourney_k_valu
     players_elo[player_name] = player_new_elo
     players_elo[opponent_name] = opponent_new_elo
 
-    return player_expected_win_percent, opponent_expected_win_percent, player_pre_elo, opponent_pre_elo
+    return player_pre_elo, opponent_pre_elo
 
-
+# this function adds each players elo to the RAW dataset, BEFORE two rows are created for each match
 def add_elo_to_csv(df):
-    print(f"players_elo has {len(players_elo)} entries at start")
+    players_elo_local = {}
     for idx, match in df.iterrows():
-        player_win_prob, opponent_win_prob, player_elo, opponent_elo = calculate_elo(
-            match, match["winner_name"], match["loser_name"], players_elo, tourney_k)
+        player_elo, opponent_elo = calculate_elo(
+            match, match["winner_name"], match["loser_name"], players_elo_local, tourney_k)
         
-        if idx == df.index[0]:
-            print(f"First match: {match['winner_name']} ELO = {player_elo}, {match['loser_name']} ELO = {opponent_elo}")
+        # if idx == df.index[0]:
+        #     print(f"First match: {match['winner_name']} ELO = {player_elo}, {match['loser_name']} ELO = {opponent_elo}")
 
         df.at[idx, "player_elo"] = player_elo
         df.at[idx, "opponent_elo"] = opponent_elo
-        df.at[idx, "player_win_probability"] = player_win_prob
-        df.at[idx, "opponent_win_probability"] = opponent_win_prob
 
     return df
 
@@ -92,14 +84,19 @@ def add_elo_to_csv(df):
 # This difference means creating rolling averages for players very difficult, so for each game Sinner plays in he should be player_* regardless, and a new field result to be made (1 for win, 0 for loss)
 # This way i can just look for Sinner in the player_name field and create rolling averages that way
 def create_two_rows(df):
-    print(
-        f'The current size of the dataframe is {len(df)}. After this it should be 2x as big, which is {len(df)*2}')
-    print(f'The current number of headers is {len(df.columns)}')
+    # print(
+    #     f'The current size of the dataframe is {len(df)}. After this it should be 2x as big, which is {len(df)*2}')
+    # print(f'The current number of headers is {len(df.columns)}')
     rows = []
+    last_matchday_local = {}
 
     # iterrows() iterates through every match row in df and gets the index and the row itself
     # now for each match, create a winner row and a loser row, so one row where the player won and opponent lost, and another where the player is the one that lost and the opponent won
     for _, match in df.iterrows():
+
+        # compute days rest once per player for this match to avoid double-updating state
+        winner_days_rest = days_between(match, match["winner_name"], last_matchday_local)
+        loser_days_rest = days_between(match, match["loser_name"], last_matchday_local)
 
         # create a dictionary of the base info that will stay the same for both the winner and loser rows
         tournament_information = {
@@ -111,6 +108,7 @@ def create_two_rows(df):
             "tourney_k_value": tourney_k[match["tourney_level"]],
             "tourney_date": match["tourney_date"],
             "match_num": match["match_num"],
+            "elo_gap": abs(match["player_elo"] - match["opponent_elo"])
 
         }
 
@@ -122,9 +120,7 @@ def create_two_rows(df):
             "minutes": match["minutes"],
         }
         
-        # define the differences in rank and in elo, the loser one would just be the inverse of the winners
-        winner_ranking_diff = match["winner_rank"] - match["loser_rank"]
-        winner_elo_diff = match["player_elo"] - match["opponent_elo"]
+
 
         winner = {
             **tournament_information,
@@ -139,12 +135,9 @@ def create_two_rows(df):
             "player_age": match['winner_age'],
             "player_rank": match['winner_rank'],
             "player_rank_points": match['winner_rank_points'],
-            "player_days_rest": days_between(match, match["winner_name"], last_matchday),
+            "player_days_rest": winner_days_rest,
             "player_elo": match["player_elo"],
-            "player_win_probability": match["player_win_probability"],
             
-            "ranking_difference": winner_ranking_diff,
-            "elo_difference": winner_elo_diff,
 
             "opponent_id": match['loser_id'],
             "opponent_seed": match['loser_seed'],
@@ -156,9 +149,8 @@ def create_two_rows(df):
             "opponent_age": match['loser_age'],
             "opponent_rank": match['loser_rank'],
             "opponent_rank_points": match['loser_rank_points'],
-            "opponent_days_rest": days_between(match, match["loser_name"], last_matchday),
+            "opponent_days_rest": loser_days_rest,
             "opponent_elo": match["opponent_elo"],
-            "opponent_win_probability": match["opponent_win_probability"],
 
 
             **match_result,
@@ -199,12 +191,10 @@ def create_two_rows(df):
             "player_age": match['loser_age'],
             "player_rank": match['loser_rank'],
             "player_rank_points": match['loser_rank_points'],
-            "player_days_rest": days_between(match, match["loser_name"], last_matchday),
+            "player_days_rest": loser_days_rest,
             "player_elo": match["opponent_elo"],
-            "player_win_probability": match["opponent_win_probability"],
+
             
-            "ranking_difference": -winner_ranking_diff,
-            "elo_difference": -winner_elo_diff,
 
             "opponent_id": match['winner_id'],
             "opponent_seed": match['winner_seed'],
@@ -216,9 +206,9 @@ def create_two_rows(df):
             "opponent_age": match['winner_age'],
             "opponent_rank": match['winner_rank'],
             "opponent_rank_points": match['winner_rank_points'],
-            "opponent_days_rest": days_between(match, match["winner_name"], last_matchday),
+            "opponent_days_rest": winner_days_rest,
             "opponent_elo": match["player_elo"],
-            "opponent_win_probability": match["player_win_probability"],
+
 
             **match_result,
 
@@ -252,18 +242,7 @@ def create_two_rows(df):
         rows.append(winner)
         rows.append(loser)
 
-    print(f'The current size of this new dataframe is {len(rows)}')
-    print(f'The current number of headers is {len(rows[0])}')
+    # print(f'The current size of this new dataframe is {len(rows)}')
+    # print(f'The current number of headers is {len(rows[0])}')
 
     return pd.DataFrame(rows)
-
-# Next set of functions create composite fields based on a bunch of different formulas, with numbers in those formulas gathered online
-
-# Calculate each players expected win rate before the game is starting
-
-
-def calculate_expected_win_percentage(player_elo, opponent_elo):
-    elo_difference = opponent_elo - player_elo
-
-    win_percentage = 1 / (1 + 10**(elo_difference) / 400)
-    return win_percentage
