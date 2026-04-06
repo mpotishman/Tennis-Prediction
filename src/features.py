@@ -121,6 +121,10 @@ def create_two_rows(df):
             "round": match["round"],
             "minutes": match["minutes"],
         }
+        
+        # define the differences in rank and in elo, the loser one would just be the inverse of the winners
+        winner_ranking_diff = match["winner_rank"] - match["loser_rank"]
+        winner_elo_diff = match["player_elo"] - match["opponent_elo"]
 
         winner = {
             **tournament_information,
@@ -138,6 +142,9 @@ def create_two_rows(df):
             "player_days_rest": days_between(match, match["winner_name"], last_matchday),
             "player_elo": match["player_elo"],
             "player_win_probability": match["player_win_probability"],
+            
+            "ranking_difference": winner_ranking_diff,
+            "elo_difference": winner_elo_diff,
 
             "opponent_id": match['loser_id'],
             "opponent_seed": match['loser_seed'],
@@ -152,6 +159,7 @@ def create_two_rows(df):
             "opponent_days_rest": days_between(match, match["loser_name"], last_matchday),
             "opponent_elo": match["opponent_elo"],
             "opponent_win_probability": match["opponent_win_probability"],
+
 
             **match_result,
 
@@ -194,6 +202,9 @@ def create_two_rows(df):
             "player_days_rest": days_between(match, match["loser_name"], last_matchday),
             "player_elo": match["opponent_elo"],
             "player_win_probability": match["opponent_win_probability"],
+            
+            "ranking_difference": -winner_ranking_diff,
+            "elo_difference": -winner_elo_diff,
 
             "opponent_id": match['winner_id'],
             "opponent_seed": match['winner_seed'],
