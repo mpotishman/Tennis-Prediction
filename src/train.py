@@ -11,7 +11,15 @@ def random_forest(X_train, y_train, X_test, y_test):
     return accuracy_score(y_test, predictions)
 
 def xgboost(X_train, y_train, X_test, y_test):
-    model = XGBClassifier(n_estimators=100, random_state=42, eval_metric="logloss")
+    model = XGBClassifier(
+        n_estimators=500,
+        learning_rate=0.05,
+        max_depth=4,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        random_state=42,
+        eval_metric="logloss"
+    )
     model.fit(X_train, y_train)
     predictions = model.predict(X_test)
     return accuracy_score(y_test, predictions)
@@ -100,8 +108,7 @@ def logistical_regression(X_train, y_train, X_test, y_test):
 
 
 def training(df):
-    features = ['player_elo', 'opponent_elo', 'player_rank', 'opponent_rank', 'player_rank_points', 'opponent_rank_points', 'player_age', 'opponent_age', 'player_ht', 'elo_gap',
-                'opponent_ht', 'player_days_rest', 'opponent_days_rest', 'tourney_k_value', 'best_of', 'draw_size', 'surface', 'tourney_level', 'round', 'player_hand', 'opponent_hand']
+    features = ['elo_gap','tourney_k_value', 'best_of', 'surface', 'tourney_level', 'round', 'winrate_gap', 'surface_elo_gap', 'rank_gap', 'rank_points_gap', 'days_rest_gap']
 
     surface_map = {"Hard": 0, "Clay": 1, "Grass": 2}
     df["surface"] = df["surface"].map(surface_map).fillna(-1)
@@ -156,6 +163,28 @@ def training(df):
         lr_accuracies.append(lr)
         rf_accuracies.append(rf)
         xgb_accuracies.append(xgb)
-    print(f"\nAverage LR:  {sum(lr_accuracies) / len(lr_accuracies):.3f}")
-    print(f"Average RF:  {sum(rf_accuracies) / len(rf_accuracies):.3f}")
-    print(f"Average XGB: {sum(xgb_accuracies) / len(xgb_accuracies):.3f}")
+        
+    print(f"\nAverage LR:  {sum(lr_accuracies) / len(lr_accuracies):.3f}, {lr_accuracies}")
+    print(f"Average RF:  {sum(rf_accuracies) / len(rf_accuracies):.3f}, {rf_accuracies}")
+    print(f"Average XGB: {sum(xgb_accuracies) / len(xgb_accuracies):.3f}, {xgb_accuracies}")
+    
+    # AO 2026 standalone
+    train_ao26 = df[df["tourney_date"] < "2026-01-18"]
+    test_ao26 = df[
+        (df["tourney_date"] >= "2026-01-18") &
+        (df["tourney_date"] <= "2026-02-02") &
+        (df["tourney_name"] == "Australian Open")
+    ]
+
+    X_train = train_ao26[features]
+    y_train = train_ao26["result"]
+    X_test = test_ao26[features]
+    y_test = test_ao26["result"]
+
+    X_train = X_train.fillna(X_train.median())
+    X_test = X_test.fillna(X_train.median())
+
+    lr = logistical_regression(X_train, y_train, X_test, y_test)
+    rf = random_forest(X_train, y_train, X_test, y_test)
+    xgb = xgboost(X_train, y_train, X_test, y_test)
+    print(f"\nAO 2026 standalone: LR={lr:.3f} RF={rf:.3f} XGB={xgb:.3f}")
