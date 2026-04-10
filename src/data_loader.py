@@ -18,8 +18,13 @@ for filename in os.listdir(directory_path):
         all_data.append(df)
 
 all_data = pd.concat(all_data).reset_index(drop=True)
-all_data = all_data.sort_values("tourney_date").reset_index(drop=True)
 all_data["tourney_date"] = pd.to_datetime(all_data["tourney_date"], format="%Y%m%d")
+all_data["match_num"] = pd.to_numeric(all_data["match_num"], errors="coerce")
+
+all_data = all_data.sort_values(
+    ["tourney_date", "tourney_id", "match_num"]
+).reset_index(drop=True)
+
 
 print(f"\nExpected rows: {expected_total_rows} | Actual: {len(all_data)}")
 print(f"Date range: {all_data['tourney_date'].min().date()} to {all_data['tourney_date'].max().date()}")
@@ -35,9 +40,7 @@ after_elo = set(all_data.columns)
 print(f"Columns after ELO: {len(all_data.columns)} | New: {sorted(after_elo - original_columns)}")
 
 all_data = create_two_rows(all_data)
-print(all_data["result"].head(20).tolist())  # should NOT be [1,0,1,0,1,0...]
 all_data = all_data.sample(frac=1, random_state=42).reset_index(drop=True)
-print(all_data["result"].head(20).tolist())  # should look random
 print(f"Columns after reshape: {len(all_data.columns)}")
 print(f"Rows after reshape: {len(all_data)} (expected {expected_total_rows * 2})")
 
@@ -64,6 +67,8 @@ all_data = all_data.sample(frac=1, random_state=42).reset_index(drop=True)
 # ============================================================
 output_path = "data/processed/combined.csv"
 all_data.to_csv(output_path, index=False)
+print(df[df["tourney_level"] == "G"]["tourney_name"].unique())
+print(df[df["tourney_name"] == "US Open"]["tourney_date"].unique())
 print(f"\nSaved to {output_path} — shape: {all_data.shape}")
 
 

@@ -46,11 +46,11 @@ def calculate_elo(match, player_name, opponent_name, players_elo, tourney_k_valu
     opponent_pre_elo = players_elo[opponent_name]
 
     player_expected_win_percent = 1 / \
-        (1+10**((players_elo[player_name] -
-         players_elo[opponent_name])/400))
-    opponent_expected_win_percent = 1 / \
         (1+10**((players_elo[opponent_name] -
          players_elo[player_name])/400))
+    opponent_expected_win_percent = 1 / \
+        (1+10**((players_elo[player_name] -
+         players_elo[opponent_name])/400))
 
     player_new_elo = players_elo[player_name] + (
         tourney_k_value[match["tourney_level"]] * (1 - player_expected_win_percent))

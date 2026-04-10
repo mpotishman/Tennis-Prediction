@@ -1,7 +1,20 @@
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
 
+def random_forest(X_train, y_train, X_test, y_test):
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
+    predictions = model.predict(X_test)
+    return accuracy_score(y_test, predictions)
+
+def xgboost(X_train, y_train, X_test, y_test):
+    model = XGBClassifier(n_estimators=100, random_state=42, eval_metric="logloss")
+    model.fit(X_train, y_train)
+    predictions = model.predict(X_test)
+    return accuracy_score(y_test, predictions)
 
 def leakage_scan(df, features, target_col="result", min_count=50, min_class_frac=0.1, max_report=10):
     # Flag suspicious feature/label relationships that look like leakage.
@@ -87,13 +100,10 @@ def logistical_regression(X_train, y_train, X_test, y_test):
 
 
 def training(df):
-    # define the features that are going to be fed into the model, where are the features and y is the target (result)
     features = ['player_elo', 'opponent_elo', 'player_rank', 'opponent_rank', 'player_rank_points', 'opponent_rank_points', 'player_age', 'opponent_age', 'player_ht', 'elo_gap',
                 'opponent_ht', 'player_days_rest', 'opponent_days_rest', 'tourney_k_value', 'best_of', 'draw_size', 'surface', 'tourney_level', 'round', 'player_hand', 'opponent_hand']
-    target = df['result']
 
-    # encode the different string fields
-    surface_map = {"Hard": 0, "Clay": 1, "Grass": 2, -1: -1}
+    surface_map = {"Hard": 0, "Clay": 1, "Grass": 2}
     df["surface"] = df["surface"].map(surface_map).fillna(-1)
 
     round_map = {"R128": 1, "R64": 2, "R32": 3, "R16": 4,
@@ -104,39 +114,48 @@ def training(df):
     df["player_hand"] = df["player_hand"].map(hand_map).fillna(-1)
     df["opponent_hand"] = df["opponent_hand"].map(hand_map).fillna(-1)
 
-    level_map = {"G": 4, "M": 3, "F": 3, "A": 2,
-                 "500": 2, "O": 2, "250": 1, "D": 1}
-    df["tourney_level"] = df["tourney_level"].map(
-        level_map).fillna(-1).astype(int)
+    level_map = {"G": 4, "M": 3, "F": 3, "A": 2, "500": 2, "O": 2, "250": 1, "D": 1}
+    df["tourney_level"] = df["tourney_level"].map(level_map).fillna(-1).astype(int)
 
-    # now get the training and test data - train on all matches pre Australian Open 2026, and test the accuracy of the model by predicting that tournament
-    train = df[df["tourney_date"] < "2026-01-18"]
-
-    test = df[
-        (df["tourney_date"] >= "2026-01-18") &
-        (df["tourney_name"] == "Australian Open")
+    tournaments = [
+        ("Australian Open 2025", "2025-01-12", "2025-01-26", "Australian Open"),
+        ("French Open 2025",     "2025-05-19", "2025-06-08", "Roland Garros"),
+        ("Wimbledon 2025",       "2025-06-30", "2025-07-13", "Wimbledon"),
+        ("US Open 2025",         "2025-08-25", "2025-09-07", "US Open"),
+        ("Australian Open 2026", "2026-01-18", "2026-02-02", "Australian Open"),
     ]
 
-    leakage_warnings = leakage_scan(train, features)
-    if leakage_warnings:
-        print("\nPotential leakage signals:")
-        for feature, msg in leakage_warnings:
-            print(f" - {feature}: {msg}")
+    lr_accuracies = []
+    rf_accuracies = []
+    xgb_accuracies = []
 
-    # print(f"Train rows: {len(train)}")
-    # print(f"Test rows: {len(test)}")
-    # print(test["tourney_name"].unique())
-    
-    
-    # define the training and test data
-    # X_train is the input data the machine trains on. y_train is the correct answer for those training rows (1 = win, 0 = loss)
-    # X_test is what the model will test on, so its the same columns as before but just ones the model has never seen. y_test is the actual results for AO 2026 
-    X_train = train[features]
-    y_train = train["result"]
-    X_test = test[features]
-    y_test = test["result"]
-    
-    X_train = X_train.fillna(X_train.median())
-    X_test = X_test.fillna(X_train.median())        
-    
-    return logistical_regression(X_train, y_train, X_test, y_test)
+    for tourney_label, start, end, tourney_name in tournaments:
+        train = df[df["tourney_date"] < start]
+        test = df[
+            (df["tourney_date"] >= start) &
+            (df["tourney_date"] <= end) &
+            (df["tourney_name"] == tourney_name)
+        ]
+
+        if len(test) == 0:
+            print(f"{tourney_label}: no data found, skipping")
+            continue
+
+        X_train = train[features]
+        y_train = train["result"]
+        X_test = test[features]
+        y_test = test["result"]
+
+        X_train = X_train.fillna(X_train.median())
+        X_test = X_test.fillna(X_train.median())
+
+        lr = logistical_regression(X_train, y_train, X_test, y_test)
+        rf = random_forest(X_train, y_train, X_test, y_test)
+        xgb = xgboost(X_train, y_train, X_test, y_test)
+        print(f"{tourney_label}: LR={lr:.3f} RF={rf:.3f} XGB={xgb:.3f}")
+        lr_accuracies.append(lr)
+        rf_accuracies.append(rf)
+        xgb_accuracies.append(xgb)
+    print(f"\nAverage LR:  {sum(lr_accuracies) / len(lr_accuracies):.3f}")
+    print(f"Average RF:  {sum(rf_accuracies) / len(rf_accuracies):.3f}")
+    print(f"Average XGB: {sum(xgb_accuracies) / len(xgb_accuracies):.3f}")
