@@ -3,6 +3,7 @@ from .elo_calculation import add_elo_to_csv
 from .calculate_surface_elo import add_surface_elo_to_csv
 from .head2head import add_h2h_to_csv
 from .days_rest import add_days_rest_to_csv
+from .serve_stats import add_serve_stats_to_csv
 
 def add_raw_data_to_csv(df):
     df = add_elo_to_csv(df)
@@ -11,5 +12,6 @@ def add_raw_data_to_csv(df):
     df = add_winrate_gap(df)
     df = add_h2h_to_csv(df)
     df = add_days_rest_to_csv(df)
+    df = add_serve_stats_to_csv(df)
     
     return df

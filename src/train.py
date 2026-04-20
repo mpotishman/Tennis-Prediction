@@ -1,114 +1,106 @@
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import GridSearchCV
 from xgboost import XGBClassifier
+
 
 def random_forest(X_train, y_train, X_test, y_test):
     model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
     predictions = model.predict(X_test)
-    return accuracy_score(y_test, predictions)
+    return model, accuracy_score(y_test, predictions)
+
 
 def xgboost(X_train, y_train, X_test, y_test):
     model = XGBClassifier(
         n_estimators=500,
         learning_rate=0.05,
         max_depth=4,
-        subsample=0.8,
-        colsample_bytree=0.8,
+        subsample=0.7,
+        colsample_bytree=0.7,
         random_state=42,
         eval_metric="logloss"
     )
     model.fit(X_train, y_train)
     predictions = model.predict(X_test)
-    return accuracy_score(y_test, predictions)
-
-def leakage_scan(df, features, target_col="result", min_count=50, min_class_frac=0.1, max_report=10):
-    # Flag suspicious feature/label relationships that look like leakage.
-    warnings = []
-    if target_col not in df.columns:
-        return warnings
-
-    # Cache class counts for later thresholds.
-    class_counts = df[target_col].value_counts()
-    if class_counts.empty:
-        return warnings
-
-    for feature in features:
-        if feature not in df.columns:
-            continue
-
-        s = df[feature]
-
-        # Missingness leakage: if one class is mostly missing and the other isn't.
-        if s.isna().any():
-            miss_rate = df.groupby(target_col)[feature].apply(lambda x: x.isna().mean())
-            if len(miss_rate) == 2 and miss_rate.max() >= 0.9 and miss_rate.min() <= 0.1:
-                warnings.append(
-                    (feature, f"missingness strongly tied to result {miss_rate.to_dict()}")
-                )
-
-        # Value exclusivity leakage: a value appears only with one class at scale.
-        vc = df[[feature, target_col]].dropna().groupby(feature)[target_col].value_counts().unstack(fill_value=0)
-        for cls in [0, 1]:
-            if cls not in vc.columns:
-                vc[cls] = 0
-
-        for val, row in vc.iterrows():
-            exclusive = (row[0] == 0) != (row[1] == 0)
-            if not exclusive:
-                continue
-            cls = 1 if row[0] == 0 else 0
-            cnt = int(row[cls])
-            class_total = int(class_counts.get(cls, 0))
-            if cnt >= min_count and class_total > 0 and (cnt / class_total) >= min_class_frac:
-                if isinstance(val, float):
-                    val_repr = round(val, 6)
-                else:
-                    val_repr = val
-                warnings.append(
-                    (feature, f"value {val_repr!r} appears only with result={cls} (count={cnt})")
-                )
-                break
-
-        # Simple numeric separation: one class entirely above/below the other.
-        if pd.api.types.is_numeric_dtype(s):
-            s0 = s[df[target_col] == 0].dropna()
-            s1 = s[df[target_col] == 1].dropna()
-            if not s0.empty and not s1.empty:
-                if s0.max() < s1.min() or s1.max() < s0.min():
-                    warnings.append((feature, "perfect numeric separation between classes"))
-
-        # Cap the number of warnings to avoid noisy output.
-        if len(warnings) >= max_report:
-            break
-
-    return warnings
+    return model, accuracy_score(y_test, predictions)
 
 
+def tune_xgboost(X_train, y_train):
+    param_grid = {
+        "n_estimators": [100, 300, 500],
+        "learning_rate": [0.01, 0.05, 0.1],
+        "max_depth": [3, 4, 5],
+        "subsample": [0.7, 0.8, 0.9],
+        "colsample_bytree": [0.7, 0.8, 0.9],
+    }
+    model = XGBClassifier(random_state=42, eval_metric="logloss")
+    grid = GridSearchCV(model, param_grid, cv=5, scoring="accuracy", n_jobs=-1)
+    grid.fit(X_train, y_train)
+    print(f"Best params: {grid.best_params_}")
+    print(f"Best CV score: {grid.best_score_:.3f}")
+    return grid.best_estimator_
 
-    
 
-# =============================================================
-# FUNCTIONS FOR DIFFERENT MODELS
 def logistical_regression(X_train, y_train, X_test, y_test):
-   
-    # define the model - max_iter means to try up to 1000 iterations to converge
     model = LogisticRegression(max_iter=5000)
-    
-    # The actual training, where the model looks at features and results together and learns the weight
     model.fit(X_train, y_train)
-    
-    # feeds in A0 2026 features, and it spits out either 1 or 0
     predictions = model.predict(X_test)
-    
-    # compares prediction to real results
-    return accuracy_score(y_test, predictions)
+    return model, accuracy_score(y_test, predictions)
+
+
+def plot_feature_importance(model, feature_names, model_name, top_n=15):
+    if model_name == "Logistic Regression":
+        importance = np.abs(model.coef_[0])
+        label = "absolute coefficient"
+    else:
+        importance = model.feature_importances_
+        label = "importance"
+
+    fi = pd.DataFrame({
+        "feature": feature_names,
+        label: importance
+    }).sort_values(label, ascending=False)
+
+    print(f"\n{model_name} top feature values:")
+    print(fi.head(top_n).to_string(index=False))
+
+    top = fi.head(top_n).sort_values(label, ascending=True)
+
+    plt.figure(figsize=(10, 6))
+    plt.barh(top["feature"], top[label])
+    plt.title(f"{model_name} Feature Importance")
+    plt.xlabel(label)
+    plt.tight_layout()
+    plt.show()
 
 
 def training(df):
-    features = ['elo_gap','tourney_k_value', 'best_of', 'surface', 'tourney_level', 'round', 'winrate_gap', 'surface_elo_gap', 'rank_gap', 'rank_points_gap', 'days_rest_gap']
+    features = [
+        'elo_gap',
+        'tourney_k_value',
+        'best_of',
+        'surface',
+        'tourney_level',
+        'round',
+        'winrate_gap',
+        'surface_elo_gap',
+        'rank_gap',
+        'rank_points_gap',
+        'days_rest_gap',
+        'hold_rate_gap',
+        'first_srv_win_rate_gap',
+        'second_srv_win_rate_gap'
+    ]
+
+    print("\nTraining set features:")
+    print(features)
 
     surface_map = {"Hard": 0, "Clay": 1, "Grass": 2}
     df["surface"] = df["surface"].map(surface_map).fillna(-1)
@@ -124,50 +116,51 @@ def training(df):
     level_map = {"G": 4, "M": 3, "F": 3, "A": 2, "500": 2, "O": 2, "250": 1, "D": 1}
     df["tourney_level"] = df["tourney_level"].map(level_map).fillna(-1).astype(int)
 
-    tournaments = [
-        ("Australian Open 2025", "2025-01-12", "2025-01-26", "Australian Open"),
-        ("French Open 2025",     "2025-05-19", "2025-06-08", "Roland Garros"),
-        ("Wimbledon 2025",       "2025-06-30", "2025-07-13", "Wimbledon"),
-        ("US Open 2025",         "2025-08-25", "2025-09-07", "US Open"),
-        ("Australian Open 2026", "2026-01-18", "2026-02-02", "Australian Open"),
-    ]
+    # tournaments = [
+    #     ("Australian Open 2025", "2025-01-12", "2025-01-26", "Australian Open"),
+    #     ("French Open 2025",     "2025-05-19", "2025-06-08", "Roland Garros"),
+    #     ("Wimbledon 2025",       "2025-06-30", "2025-07-13", "Wimbledon"),
+    #     ("US Open 2025",         "2025-08-25", "2025-09-07", "US Open"),
+    #     ("Australian Open 2026", "2026-01-18", "2026-02-02", "Australian Open"),
+    # ]
 
-    lr_accuracies = []
-    rf_accuracies = []
-    xgb_accuracies = []
+    # lr_accuracies = []
+    # rf_accuracies = []
+    # xgb_accuracies = []
 
-    for tourney_label, start, end, tourney_name in tournaments:
-        train = df[df["tourney_date"] < start]
-        test = df[
-            (df["tourney_date"] >= start) &
-            (df["tourney_date"] <= end) &
-            (df["tourney_name"] == tourney_name)
-        ]
+    # for tourney_label, start, end, tourney_name in tournaments:
+    #     train = df[df["tourney_date"] < start]
+    #     test = df[
+    #         (df["tourney_date"] >= start) &
+    #         (df["tourney_date"] <= end) &
+    #         (df["tourney_name"] == tourney_name)
+    #     ]
 
-        if len(test) == 0:
-            print(f"{tourney_label}: no data found, skipping")
-            continue
+    #     if len(test) == 0:
+    #         print(f"{tourney_label}: no data found, skipping")
+    #         continue
 
-        X_train = train[features]
-        y_train = train["result"]
-        X_test = test[features]
-        y_test = test["result"]
+    #     X_train = train[features]
+    #     y_train = train["result"]
+    #     X_test = test[features]
+    #     y_test = test["result"]
 
-        X_train = X_train.fillna(X_train.median())
-        X_test = X_test.fillna(X_train.median())
+    #     X_train = X_train.fillna(X_train.median())
+    #     X_test = X_test.fillna(X_train.median())
 
-        lr = logistical_regression(X_train, y_train, X_test, y_test)
-        rf = random_forest(X_train, y_train, X_test, y_test)
-        xgb = xgboost(X_train, y_train, X_test, y_test)
-        print(f"{tourney_label}: LR={lr:.3f} RF={rf:.3f} XGB={xgb:.3f}")
-        lr_accuracies.append(lr)
-        rf_accuracies.append(rf)
-        xgb_accuracies.append(xgb)
-        
-    print(f"\nAverage LR:  {sum(lr_accuracies) / len(lr_accuracies):.3f}, {lr_accuracies}")
-    print(f"Average RF:  {sum(rf_accuracies) / len(rf_accuracies):.3f}, {rf_accuracies}")
-    print(f"Average XGB: {sum(xgb_accuracies) / len(xgb_accuracies):.3f}, {xgb_accuracies}")
-    
+    #     lr_model, lr = logistical_regression(X_train, y_train, X_test, y_test)
+    #     rf_model, rf = random_forest(X_train, y_train, X_test, y_test)
+    #     xgb_model, xgb = xgboost(X_train, y_train, X_test, y_test)
+
+    #     print(f"{tourney_label}: LR={lr:.3f} RF={rf:.3f} XGB={xgb:.3f}")
+    #     lr_accuracies.append(lr)
+    #     rf_accuracies.append(rf)
+    #     xgb_accuracies.append(xgb)
+
+    # print(f"\nAverage LR:  {sum(lr_accuracies) / len(lr_accuracies):.3f}")
+    # print(f"Average RF:  {sum(rf_accuracies) / len(rf_accuracies):.3f}")
+    # print(f"Average XGB: {sum(xgb_accuracies) / len(xgb_accuracies):.3f}")
+
     # AO 2026 standalone
     train_ao26 = df[df["tourney_date"] < "2026-01-18"]
     test_ao26 = df[
@@ -180,11 +173,21 @@ def training(df):
     y_train = train_ao26["result"]
     X_test = test_ao26[features]
     y_test = test_ao26["result"]
-
+    
     X_train = X_train.fillna(X_train.median())
     X_test = X_test.fillna(X_train.median())
+    
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+    scaler.feature_fill_values = X_train.median()
 
-    lr = logistical_regression(X_train, y_train, X_test, y_test)
-    rf = random_forest(X_train, y_train, X_test, y_test)
-    xgb = xgboost(X_train, y_train, X_test, y_test)
-    print(f"\nAO 2026 standalone: LR={lr:.3f} RF={rf:.3f} XGB={xgb:.3f}")
+    
+
+    # lr_model, lr = logistical_regression(X_train, y_train, X_test, y_test)
+    # rf_model, rf = random_forest(X_train, y_train, X_test, y_test)
+    xgb_model, xgb = xgboost(X_train_scaled, y_train, X_test_scaled, y_test)
+
+    print(f"\nAO 2026 standalone: XGB={xgb:.3f}")
+    
+    return xgb_model, scaler, features
