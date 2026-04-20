@@ -59,7 +59,7 @@ print(f"Rows after reshape: {len(all_data)} (expected {expected_total_rows * 2})
 # ============================================================
 # FINAL SHUFFLE (ONLY ONCE)
 # ============================================================
-all_data = all_data.sample(frac=1, random_state=42).reset_index(drop=True)
+# all_data = all_data.sample(frac=1, random_state=42).reset_index(drop=True)
 
 # ============================================================
 # SANITY CHECKS
