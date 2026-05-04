@@ -1,0 +1,36 @@
+.panel {
+  position: relative;
+  z-index: 1;
+}
+
+.button {
+  border: 1px solid rgba(245, 240, 222, 0.34);
+  background: rgba(245, 240, 222, 0.1);
+  color: #f5f0de;
+  box-shadow: 0 14px 36px rgba(6, 17, 16, 0.22);
+  backdrop-filter: blur(12px);
+}
+
+.button:hover:enabled {
+  background: rgba(245, 240, 222, 0.18);
+  border-color: rgba(245, 240, 222, 0.5);
+}
+
+.button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.result {
+  margin: 0;
+  color: #f5f0de;
+  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  letter-spacing: 0.04em;
+}
+
+.error {
+  margin: 0;
+  color: #f7d3c6;
+  font-size: 0.95rem;
+}

@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 
 from sklearn.linear_model import LogisticRegression
@@ -55,32 +54,6 @@ def logistical_regression(X_train, y_train, X_test, y_test):
     return model, accuracy_score(y_test, predictions)
 
 
-def plot_feature_importance(model, feature_names, model_name, top_n=15):
-    if model_name == "Logistic Regression":
-        importance = np.abs(model.coef_[0])
-        label = "absolute coefficient"
-    else:
-        importance = model.feature_importances_
-        label = "importance"
-
-    fi = pd.DataFrame({
-        "feature": feature_names,
-        label: importance
-    }).sort_values(label, ascending=False)
-
-    print(f"\n{model_name} top feature values:")
-    print(fi.head(top_n).to_string(index=False))
-
-    top = fi.head(top_n).sort_values(label, ascending=True)
-
-    plt.figure(figsize=(10, 6))
-    plt.barh(top["feature"], top[label])
-    plt.title(f"{model_name} Feature Importance")
-    plt.xlabel(label)
-    plt.tight_layout()
-    plt.show()
-
-
 def training(df):
     features = [
         'elo_gap',
@@ -116,50 +89,6 @@ def training(df):
     level_map = {"G": 4, "M": 3, "F": 3, "A": 2, "500": 2, "O": 2, "250": 1, "D": 1}
     df["tourney_level"] = df["tourney_level"].map(level_map).fillna(-1).astype(int)
 
-    # tournaments = [
-    #     ("Australian Open 2025", "2025-01-12", "2025-01-26", "Australian Open"),
-    #     ("French Open 2025",     "2025-05-19", "2025-06-08", "Roland Garros"),
-    #     ("Wimbledon 2025",       "2025-06-30", "2025-07-13", "Wimbledon"),
-    #     ("US Open 2025",         "2025-08-25", "2025-09-07", "US Open"),
-    #     ("Australian Open 2026", "2026-01-18", "2026-02-02", "Australian Open"),
-    # ]
-
-    # lr_accuracies = []
-    # rf_accuracies = []
-    # xgb_accuracies = []
-
-    # for tourney_label, start, end, tourney_name in tournaments:
-    #     train = df[df["tourney_date"] < start]
-    #     test = df[
-    #         (df["tourney_date"] >= start) &
-    #         (df["tourney_date"] <= end) &
-    #         (df["tourney_name"] == tourney_name)
-    #     ]
-
-    #     if len(test) == 0:
-    #         print(f"{tourney_label}: no data found, skipping")
-    #         continue
-
-    #     X_train = train[features]
-    #     y_train = train["result"]
-    #     X_test = test[features]
-    #     y_test = test["result"]
-
-    #     X_train = X_train.fillna(X_train.median())
-    #     X_test = X_test.fillna(X_train.median())
-
-    #     lr_model, lr = logistical_regression(X_train, y_train, X_test, y_test)
-    #     rf_model, rf = random_forest(X_train, y_train, X_test, y_test)
-    #     xgb_model, xgb = xgboost(X_train, y_train, X_test, y_test)
-
-    #     print(f"{tourney_label}: LR={lr:.3f} RF={rf:.3f} XGB={xgb:.3f}")
-    #     lr_accuracies.append(lr)
-    #     rf_accuracies.append(rf)
-    #     xgb_accuracies.append(xgb)
-
-    # print(f"\nAverage LR:  {sum(lr_accuracies) / len(lr_accuracies):.3f}")
-    # print(f"Average RF:  {sum(rf_accuracies) / len(rf_accuracies):.3f}")
-    # print(f"Average XGB: {sum(xgb_accuracies) / len(xgb_accuracies):.3f}")
 
     # AO 2026 standalone
     train_ao26 = df[df["tourney_date"] < "2026-01-18"]

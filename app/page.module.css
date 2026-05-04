@@ -1,0 +1,64 @@
+.page {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(220, 178, 77, 0.22), transparent 26%),
+    radial-gradient(circle at 82% 78%, rgba(245, 240, 222, 0.12), transparent 30%),
+    linear-gradient(145deg, #0f5f53 0%, #082f2a 100%);
+}
+
+.page::before {
+  content: "";
+  position: fixed;
+  width: min(70vw, 42rem);
+  height: min(70vw, 42rem);
+  top: -12rem;
+  right: -10rem;
+  border: 1px solid rgba(245, 240, 222, 0.18);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.page::after {
+  content: "";
+  position: fixed;
+  width: min(90vw, 56rem);
+  height: 1px;
+  left: 50%;
+  bottom: 18vh;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, rgba(245, 240, 222, 0.32), transparent);
+  pointer-events: none;
+}
+
+.glow {
+  position: absolute;
+  width: 20rem;
+  height: 20rem;
+  border-radius: 999px;
+  background: rgba(220, 178, 77, 0.18);
+  filter: blur(60px);
+  transform: translate(-30%, -40%);
+}
+
+.frame {
+  position: absolute;
+  width: min(72vw, 52rem);
+  aspect-ratio: 1;
+  border: 1px solid rgba(245, 240, 222, 0.12);
+  border-radius: 1.5rem;
+  transform: rotate(45deg);
+}
+
+.title {
+  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 640px) {
+  .glow {
+    width: 14rem;
+    height: 14rem;
+  }
+}

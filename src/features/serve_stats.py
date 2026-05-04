@@ -52,7 +52,7 @@ def add_serve_stats_to_csv(df):
     first_list = []
     second_list = []
 
-    df = df.sort_values("tourney_date")
+    df = df.sort_values(["tourney_date", "tourney_id", "match_num"])
 
     for _, row in df.iterrows():
 
