@@ -4,7 +4,6 @@
 }
 
 .button {
-  border: 1px solid rgba(245, 240, 222, 0.34);
   background: rgba(245, 240, 222, 0.1);
   color: #f5f0de;
   box-shadow: 0 14px 36px rgba(6, 17, 16, 0.22);

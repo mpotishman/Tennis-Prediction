@@ -54,23 +54,7 @@ def logistical_regression(X_train, y_train, X_test, y_test):
     return model, accuracy_score(y_test, predictions)
 
 
-def training(df):
-    features = [
-        'elo_gap',
-        'tourney_k_value',
-        'best_of',
-        'surface',
-        'tourney_level',
-        'round',
-        'winrate_gap',
-        'surface_elo_gap',
-        'rank_gap',
-        'rank_points_gap',
-        'days_rest_gap',
-        'hold_rate_gap',
-        'first_srv_win_rate_gap',
-        'second_srv_win_rate_gap'
-    ]
+def training(df, features, model_type="xgboost"):
 
     print("\nTraining set features:")
     print(features)
@@ -78,45 +62,68 @@ def training(df):
     surface_map = {"Hard": 0, "Clay": 1, "Grass": 2}
     df["surface"] = df["surface"].map(surface_map).fillna(-1)
 
-    round_map = {"R128": 1, "R64": 2, "R32": 3, "R16": 4,
-                 "QF": 5, "SF": 6, "F": 7, "RR": 3, "BR": 6, "3rd/4th": 6}
+    round_map = {
+        "R128": 1,
+        "R64": 2,
+        "R32": 3,
+        "R16": 4,
+        "QF": 5,
+        "SF": 6,
+        "F": 7,
+        "RR": 3,
+        "BR": 6,
+        "3rd/4th": 6,
+    }
     df["round"] = df["round"].map(round_map).fillna(-1)
 
     hand_map = {"R": 0, "L": 1}
     df["player_hand"] = df["player_hand"].map(hand_map).fillna(-1)
     df["opponent_hand"] = df["opponent_hand"].map(hand_map).fillna(-1)
 
-    level_map = {"G": 4, "M": 3, "F": 3, "A": 2, "500": 2, "O": 2, "250": 1, "D": 1}
+    level_map = {
+        "G": 4,
+        "M": 3,
+        "F": 3,
+        "A": 2,
+        "500": 2,
+        "O": 2,
+        "250": 1,
+        "D": 1,
+    }
     df["tourney_level"] = df["tourney_level"].map(level_map).fillna(-1).astype(int)
 
-
-    # AO 2026 standalone
     train_ao26 = df[df["tourney_date"] < "2026-01-18"]
     test_ao26 = df[
-        (df["tourney_date"] >= "2026-01-18") &
-        (df["tourney_date"] <= "2026-02-02") &
-        (df["tourney_name"] == "Australian Open")
+        (df["tourney_date"] >= "2026-01-18")
+        & (df["tourney_date"] <= "2026-02-02")
+        & (df["tourney_name"] == "Australian Open")
     ]
 
     X_train = train_ao26[features]
     y_train = train_ao26["result"]
     X_test = test_ao26[features]
     y_test = test_ao26["result"]
-    
+
     X_train = X_train.fillna(X_train.median())
     X_test = X_test.fillna(X_train.median())
-    
+
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
     scaler.feature_fill_values = X_train.median()
 
-    
+    if model_type == "xgboost":
+        model, score = xgboost(X_train_scaled, y_train, X_test_scaled, y_test)
+        label = "XGB"
+    elif model_type == "random_forest":
+        model, score = random_forest(X_train_scaled, y_train, X_test_scaled, y_test)
+        label = "RF"
+    elif model_type == "logistic":
+        model, score = logistical_regression(X_train_scaled, y_train, X_test_scaled, y_test)
+        label = "LR"
+    else:
+        raise ValueError(f"Unknown model type: {model_type}")
 
-    # lr_model, lr = logistical_regression(X_train, y_train, X_test, y_test)
-    # rf_model, rf = random_forest(X_train, y_train, X_test, y_test)
-    xgb_model, xgb = xgboost(X_train_scaled, y_train, X_test_scaled, y_test)
+    print(f"\nAO 2026 standalone: {label}={score:.3f}")
 
-    print(f"\nAO 2026 standalone: XGB={xgb:.3f}")
-    
-    return xgb_model, scaler, features
+    return model, scaler, features

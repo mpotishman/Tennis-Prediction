@@ -116,3 +116,4 @@ def run_multiple_tournaments(bracket, model, scaler, df, features, n):
             print(f"Finished {i + 1} simulations")
 
     print(round_matchups[7])
+    return round_matchups[7]

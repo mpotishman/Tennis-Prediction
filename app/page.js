@@ -4,7 +4,7 @@ import styles from "./page.module.css";
 
 export default function HomePage() {
   return (
-    <main className={`${styles.page} flex min-h-screen items-center justify-center overflow-hidden px-6`}>
+    <main className={`${styles.page} flex min-h-screen items-center justify-start flex-col overflow-hidden px-6 pt-24`}>
       <div aria-hidden="true" className={styles.glow} />
       <div aria-hidden="true" className={styles.frame} />
       <div className="relative z-10 flex flex-col items-center gap-8 text-center">
