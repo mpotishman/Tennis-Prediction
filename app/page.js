@@ -1,10 +1,81 @@
-import SimulationButton from "./components/buttons/simulation-button";
-import LowerHalfPage from "./components/main-lower-half/page";
+// ROOT PAGE — entry point for the entire app.
+// Owns all shared state: which tab is active (simType), which model is selected,
+// and which features are selected. Both panels receive this state as props so they
+// always use the same model and feature choices regardless of which tab is open.
+//
+// Data flow:
+//   page.js  →  TournamentPanel  →  /api/simulation  →  web_simulation.py
+//   page.js  →  MatchupPanel     →  /api/matchup     →  web_matchup.py
+//
+// Tab switching only swaps the displayed panel — it never triggers an API call.
+// API calls are triggered by the Run buttons inside each panel.
+
+"use client";
+
+import React, { useState } from "react";
+import TabButton from "./components/shared/TabButton";
+import TournamentPanel from "./components/tournament/TournamentPanel";
+import MatchupPanel from "./components/matchup/MatchupPanel";
 import styles from "./page.module.css";
 
+const FEATURE_MAPPING = {
+  "Match Context": {
+    tourney_k_value: "Tournament Weight",
+    tourney_level: "Tournament Level",
+    best_of: "Best Of",
+    round: "Round",
+  },
+
+  "Surface Conditions": {
+    surface: "Surface",
+    surface_elo_gap: "Surface Elo Gap",
+    days_rest_gap: "Rest Days Gap",
+  },
+
+  "Rankings and Form": {
+    elo_gap: "Elo Gap",
+    rank_gap: "Ranking Gap",
+    rank_points_gap: "Ranking Points Gap",
+    winrate_gap: "Recent Win Rate Gap",
+  },
+
+  "Serve Performance": {
+    hold_rate_gap: "Hold Rate Gap",
+    first_srv_win_rate_gap: "1st Serve Win Gap",
+    second_srv_win_rate_gap: "2nd Serve Win Gap",
+  },
+};
+
 export default function HomePage() {
+  const [simType, setSimType] = useState(1);
+  const [selectedModel, setSelectedModel] = useState("xgboost");
+  const [selectedFeatures, setSelectedFeatures] = useState(
+    Object.values(FEATURE_MAPPING).flatMap(Object.keys),
+  );
+
+  const content =
+    simType === 1 ? (
+      <TournamentPanel
+        selectedModel={selectedModel}
+        setSelectedModel={setSelectedModel}
+        selectedFeatures={selectedFeatures}
+        setSelectedFeatures={setSelectedFeatures}
+        featureMapping={FEATURE_MAPPING}
+      />
+    ) : (
+      <MatchupPanel
+        selectedModel={selectedModel}
+        setSelectedModel={setSelectedModel}
+        selectedFeatures={selectedFeatures}
+        setSelectedFeatures={setSelectedFeatures}
+        featureMapping={FEATURE_MAPPING}
+      />
+    );
+
   return (
-    <main className={`${styles.page} flex min-h-screen items-center justify-start flex-col overflow-hidden px-6 pt-24`}>
+    <main
+      className={`${styles.page} flex min-h-screen items-center justify-start flex-col overflow-hidden px-6 pt-24`}
+    >
       <div aria-hidden="true" className={styles.glow} />
       <div aria-hidden="true" className={styles.frame} />
       <div className="relative z-10 flex flex-col items-center gap-8 text-center">
@@ -13,7 +84,18 @@ export default function HomePage() {
         >
           Tennis Predictor
         </h1>
-        <LowerHalfPage />
+
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-2 justify-center ">
+            <TabButton onClick={() => setSimType(1)} isActive={simType === 1}>
+              Simulate Tournament
+            </TabButton>
+            <TabButton onClick={() => setSimType(2)} isActive={simType === 2}>
+              Simulate Matchup
+            </TabButton>
+          </div>
+          <div>{content}</div>
+        </div>
       </div>
     </main>
   );

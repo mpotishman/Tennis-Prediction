@@ -13,3 +13,19 @@ body {
 body {
   min-height: 100vh;
 }
+
+@layer components {
+  .ui-text {
+    color: #f5f0de;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+  }
+
+  .ui-panel {
+    background: rgba(245, 240, 222, 0.1);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 14px 36px rgba(6, 17, 16, 0.22);
+  }
+}

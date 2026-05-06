@@ -27,7 +27,7 @@ def main():
 
 #     sys.argv[0]  →  "src/web_simulation.py"
 #     sys.argv[1]  →  "xgboost"
-#     sys.argv[2]  →  '["elo_gap","rank_gap"]' 
+#     sys.argv[2]  →  '["elo_gap","rank_gap"]'
     model_type = sys.argv[1] if len(sys.argv) > 1 else "xgboost"
     features_selected = json.loads(sys.argv[2]) if len(sys.argv) > 2 else None
 
@@ -42,19 +42,17 @@ def main():
             SIMULATION_COUNT,
         )
 
-    winner, count = champion_counts.most_common(1)[0]
-    win_pct = round((count / SIMULATION_COUNT) * 100, 1)
+    
+    # loop through championship counts to make the percent rather than number of wins
+    dict_champion_counts = dict(champion_counts)
+    for player, count in dict_champion_counts.items():
+        dict_champion_counts[player] = round((count / SIMULATION_COUNT) * 100, 1)
 
-    print(
-        json.dumps(
-            {
-                "winner": winner,
-                "winPct": win_pct,
-                "modelLabel": MODEL_LABELS.get(model_type, model_type),
-                "features": features
-            }
-        )
-    )
+    print(json.dumps({
+        "modelLabel": MODEL_LABELS.get(model_type, model_type),
+        "results": dict(champion_counts),
+        "features": features
+    }))
 
 
 if __name__ == "__main__":
