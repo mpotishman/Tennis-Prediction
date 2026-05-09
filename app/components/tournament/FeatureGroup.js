@@ -16,7 +16,7 @@ export default function FeatureGroup({
   setSelectedFeatures,
 }) {
   return (
-    <div className="ui-panel rounded-xl p-4">
+    <div className="ui-panel rounded-xl p-4 text-left">
       <p className="ui-text border-b border-[#f5f0de]/30 pb-2 mb-2">
         {category}
       </p>

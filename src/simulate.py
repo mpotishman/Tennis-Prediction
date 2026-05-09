@@ -68,40 +68,38 @@ def simulate_match(p1, p2, round_num, model, scaler, df, features, player_lookup
     return p2
 
 
-# take in the bracket, and call simulate_match to get the winner - add the winner to a new braacket list and keep doing until bracket is length 1
+# take in the bracket, and call simulate_match to get the winner - add the winner to a new bracket list and keep doing until bracket is length 1
 def run_tournament_once(bracket, model, scaler, df, features, player_lookup_cache, probability_cache):
     bracket = list(bracket)
     round_num = 1
+    bracket_results = {}
 
     while len(bracket) > 1:
         next_round = []
+        bracket_results[round_num] = {}
         for i in range(0, len(bracket), 2):
+            match_pos = i // 2
             winner = simulate_match(
-                bracket[i],
-                bracket[i + 1],
-                round_num,
-                model,
-                scaler,
-                df,
-                features,
-                player_lookup_cache,
-                probability_cache,
+                bracket[i], bracket[i+1], round_num,
+                model, scaler, df, features,
+                player_lookup_cache, probability_cache,
             )
             next_round.append(winner)
+            bracket_results[round_num][match_pos] = winner
         bracket = next_round
         round_num += 1
 
-    return bracket[0]
-
+    return bracket[0], bracket_results
 
 
 def run_multiple_tournaments(bracket, model, scaler, df, features, n):
-    round_matchups = {2: Counter(), 3: Counter(), 4: Counter(), 5: Counter(), 6: Counter(), 7: Counter()}
+    champion_counts = Counter()
     player_lookup_cache = build_player_lookup.build_latest_player_lookup(df)
     probability_cache = {}
+    bracket_counts = {}  # { round_num: { match_pos: Counter } }
 
     for i in range(n):
-        winner = run_tournament_once(
+        winner, bracket_results = run_tournament_once(
             bracket,
             model,
             scaler,
@@ -110,10 +108,37 @@ def run_multiple_tournaments(bracket, model, scaler, df, features, n):
             player_lookup_cache,
             probability_cache,
         )
-        round_matchups[7][winner] += 1
+        champion_counts[winner] += 1
 
-        if (i + 1) % 500 == 0:
-            print(f"Finished {i + 1} simulations")
+        # bracket results is in the form of {round num: {matchNum : winner}}
+        # loop through the round num and the match, if there is no round num add it
+        # then for the match number and winner in inner dict, create a counter that counts hoow many times that player is in the match pos for that round
 
-    print(round_matchups[7])
-    return round_matchups[7]
+        
+        for round_num, matches in bracket_results.items():
+            if round_num not in bracket_counts:
+                bracket_counts[round_num] = {}
+            for match_pos, player in matches.items():
+                if match_pos not in bracket_counts[round_num]:
+                    bracket_counts[round_num][match_pos] = Counter()
+                bracket_counts[round_num][match_pos][player] += 1
+
+    return champion_counts, bracket_counts
+                
+    # # now sort match rounds so need 64 most common in r2, 32 most common in r3 etc
+    # round_size_map = {
+    #     2: 64,
+    #     3: 32,
+    #     4: 16,
+    #     5: 8,
+    #     6: 4,
+    #     7: 2,
+    #     8: 1
+    # }
+    
+    # common_matchups = {}
+    # for round_num, size in round_size_map.items():
+    #     common_matchups[round_num] = dict(match_round_counts[round_num].most_common(size))
+         
+        
+    return champion_counts, common_matchups
