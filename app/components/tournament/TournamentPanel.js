@@ -1,6 +1,7 @@
 // TOURNAMENT PANEL — shown when the "Simulate Tournament" tab is active.
 // Receives selectedModel, selectedFeatures and their setters from page.js.
-// Owns its own result/error/loading state since the API call lives here.
+// Result state (resultText, error, results, predictedBracket) is also received
+// from page.js so it persists when switching between tabs.
 //
 // User flow: pick a model → toggle features → press Run Tournament
 // On run: POSTs { modelType, featuresSelected } to /api/simulation
@@ -12,7 +13,7 @@
 //   SimulationResult  — displays the result or error text
 
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import SimulationResult from "../shared/SimulationResult";
 import TournamentRunButton from "./TournamentRunButton";
 import FeatureGroup from "./FeatureGroup";
@@ -28,12 +29,18 @@ export default function TournamentPanel({
   selectedFeatures,
   setSelectedFeatures,
   featureMapping,
+  // Result state lifted to page.js so it persists across tab switches
+  resultText,
+  setResultText,
+  error,
+  setError,
+  results,
+  setResults,
+  predictedBracket,
+  setPredictedBracket,
 }) {
-  const [resultText, setResultText] = useState("");
-  const [error, setError] = useState("");
+  // Local-only UI state — does not need to persist across tab switches
   const [isLoading, setIsLoading] = useState(false);
-  const [results, setResults] = useState(null);
-  const [predictedBracket, setPredictedBracket] = useState(null);
   const [showExplanation, setShowExplanation] = useState(false);
 
   //  check to see if all are selected if it matches the length of all the features
@@ -49,6 +56,17 @@ export default function TournamentPanel({
       setSelectedFeatures(Object.values(featureMapping).flatMap(Object.keys));
     }
   }
+
+  useEffect(() => {
+    if (!resultText) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [resultText]);
 
   async function runSimulation() {
     setError("");
@@ -145,48 +163,56 @@ export default function TournamentPanel({
         />
       </div>
 
-      <SimulationResult resultText={resultText} error={error} />
-      <TournamentChart results={results} />
-      <div className="flex flex-col p-4 mt-8  text-stone-50 w-full ">
-        <div>
-          {/* predictedBracket looks like {round: {match pos: {p1 win percent, p2 win percent}}} - needs three loops to get to bottom stage*/}
-          {predictedBracket && (
-            <>
-              <div className="flex justify-center gap-16 items-center">
-                <div className="text-balance font-serif text-xl">
-                  Most common bracket matchups over the 10,000 simulations:
+      {resultText && (
+        <>
+          <div className="fade-in-down" style={{ animationDelay: "0s" }}>
+            <SimulationResult resultText={resultText} error={error} />
+          </div>
+
+          <div className="fade-in-down" style={{ animationDelay: "0.2s" }}>
+            <TournamentChart results={results} />
+          </div>
+
+          <div
+            className="fade-in-down flex flex-col p-4 mt-8 text-stone-50 w-full"
+            style={{ animationDelay: "0.4s" }}
+          >
+            {predictedBracket && (
+              <>
+                <div className="flex justify-center gap-16 items-center">
+                  <div className="text-balance font-serif text-xl">
+                    Most common bracket matchups over the 10,000 simulations:
+                  </div>
+                  <div className="relative">
+                    <FontAwesomeIcon
+                      icon={faCircleQuestion}
+                      onMouseEnter={() => setShowExplanation(true)}
+                      onMouseLeave={() => setShowExplanation(false)}
+                      className="cursor-pointer"
+                    />
+                    {showExplanation && (
+                      <div
+                        className="
+  ui-panel bg-[#0a1f1c] absolute left-1/2 bottom-full mb-3 -translate-x-1/2 z-10
+  w-72 rounded-xl border border-stone-50/10 p-4
+  ui-text normal-case tracking-normal font-normal text-xs leading-relaxed
+  before:content-[''] before:absolute before:top-full before:left-1/2
+  before:-translate-x-1/2 before:border-8 before:border-transparent
+  before:border-t-[#0a1f1c]"
+                      >
+                        The percentage is how likely each player goes through.
+                        Later rounds don&apos;t add up to 100% due to potential
+                        upsets in other simulations.
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="relative">
-                  <FontAwesomeIcon
-                    icon={faCircleQuestion}
-                    onMouseEnter={() => setShowExplanation(true)}
-                    onMouseLeave={() => setShowExplanation(false)}
-                    className="cursor-pointer"
-                  />
-                  {showExplanation && (
-                    <div
-                      className="
-      ui-panel absolute left-1/2 bottom-full mb-3 -translate-x-1/2 z-10
-      w-72 rounded-xl border border-stone-50/10 p-4
-      ui-text normal-case tracking-normal font-normal text-xs leading-relaxed
-      before:content-[''] before:absolute before:top-full before:left-1/2
-      before:-translate-x-1/2 before:border-8 before:border-transparent
-      before:border-t-[rgba(245,240,222,0.1)]
-    "
-                    >
-                      The percentage is how likely each player goes through.
-                      Later rounds don&apos;t add up to 100% due to potential upsets
-                      in other simulations.
-                    </div>
-                  )}
-                </div>
-                
-              </div>
-              <BracketDisplay bracketInformation={predictedBracket} />
-            </>
-          )}
-        </div>
-      </div>
+                <BracketDisplay bracketInformation={predictedBracket} />
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

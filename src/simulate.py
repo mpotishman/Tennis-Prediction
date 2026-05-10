@@ -14,7 +14,7 @@ import pandas as pd
 
 from features import build_player_lookup
 
-def get_match_probability(p1, p2, round_num, model, scaler, df, features, player_lookup_cache, probability_cache):
+def get_match_probability(p1, p2, round_num, model, scaler, df, features, player_lookup_cache, probability_cache, p1year_end=2026, p2year_end=2026):
     cache_key = (round_num, p1, p2)
 
     if cache_key in probability_cache:
@@ -25,8 +25,14 @@ def get_match_probability(p1, p2, round_num, model, scaler, df, features, player
         p1,
         p2,
         round_num,
+        p1year_end,
+        p2year_end,
         player_lookup=player_lookup_cache,
     )
+    
+    # create a function to get a players earliest year involvement, set it to a variable
+    p1earliest_year = get_earliest_year(df, p1)
+    p2earliest_year = get_earliest_year(df, p2)
 
     if players_comparison is None:
         probability_cache[cache_key] = 0.5
@@ -142,3 +148,10 @@ def run_multiple_tournaments(bracket, model, scaler, df, features, n):
          
         
     return champion_counts, common_matchups
+
+def get_earliest_year(df, player):
+    player_rows = df[df["player_name"] == player]
+    if len(player_rows) == 0:
+        return None
+    earliest_date = player_rows["tourney_date"].min()
+    return int(earliest_date[:4])

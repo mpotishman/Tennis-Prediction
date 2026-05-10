@@ -3,6 +3,9 @@
 // and which features are selected. Both panels receive this state as props so they
 // always use the same model and feature choices regardless of which tab is open.
 //
+// Tournament and Matchup result state is also lifted here so that switching tabs
+// does not unmount the panels' results — state persists in the parent.
+//
 // Data flow:
 //   page.js  →  TournamentPanel  →  /api/simulation  →  web_simulation.py
 //   page.js  →  MatchupPanel     →  /api/matchup     →  web_matchup.py
@@ -53,6 +56,23 @@ export default function HomePage() {
     Object.values(FEATURE_MAPPING).flatMap(Object.keys),
   );
 
+  // --- Tournament state lifted from TournamentPanel ---
+  // Kept here so results persist when switching to the Matchup tab and back.
+  const [tResultText, setTResultText] = useState("");
+  const [tError, setTError] = useState("");
+  const [tResults, setTResults] = useState(null);
+  const [tPredictedBracket, setTPredictedBracket] = useState(null);
+
+  // --- Matchup state lifted from MatchupPanel ---
+  // Kept here so results persist when switching to the Tournament tab and back.
+  const [mResultText, setMResultText] = useState("");
+  const [mError, setMError] = useState("");
+  const [mPlayer1winPct, setMPlayer1winPct] = useState(0);
+  const [mPlayer2winPct, setMPlayer2winPct] = useState(0);
+  const [mRan, setMRan] = useState(false);
+  const [mChartPlayer1, setMChartPlayer1] = useState("");
+  const [mChartPlayer2, setMChartPlayer2] = useState("");
+
   const content =
     simType === 1 ? (
       <TournamentPanel
@@ -61,6 +81,14 @@ export default function HomePage() {
         selectedFeatures={selectedFeatures}
         setSelectedFeatures={setSelectedFeatures}
         featureMapping={FEATURE_MAPPING}
+        resultText={tResultText}
+        setResultText={setTResultText}
+        error={tError}
+        setError={setTError}
+        results={tResults}
+        setResults={setTResults}
+        predictedBracket={tPredictedBracket}
+        setPredictedBracket={setTPredictedBracket}
       />
     ) : (
       <MatchupPanel
@@ -69,6 +97,20 @@ export default function HomePage() {
         selectedFeatures={selectedFeatures}
         setSelectedFeatures={setSelectedFeatures}
         featureMapping={FEATURE_MAPPING}
+        resultText={mResultText}
+        setResultText={setMResultText}
+        error={mError}
+        setError={setMError}
+        player1winPct={mPlayer1winPct}
+        setPlayer1winPct={setMPlayer1winPct}
+        player2winPct={mPlayer2winPct}
+        setPlayer2winPct={setMPlayer2winPct}
+        ran={mRan}
+        setRan={setMRan}
+        chartPlayer1={mChartPlayer1}
+        setChartPlayer1={setMChartPlayer1}
+        chartPlayer2={mChartPlayer2}
+        setChartPlayer2={setMChartPlayer2}
       />
     );
 

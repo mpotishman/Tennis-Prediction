@@ -7,8 +7,8 @@ import React from "react";
 export default function MatchupRunButton({ runMatchup, isLoading }) {
   return (
     <div>
-      <button onClick={runMatchup} disabled={isLoading}>
-        {isLoading ? "Running..." : "Run Tournament"}
+      <button className="ui-panel ui-text rounded-full px-6 py-3" onClick={runMatchup} disabled={isLoading}>
+        {isLoading ? "Running..." : "Run Matchup"}
       </button>
     </div>
   );

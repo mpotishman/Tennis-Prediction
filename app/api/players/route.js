@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 
 export async function GET() {
   try {
+    // returns eg { "Roger Federer": 2000, "Carlos Alcaraz": 2020, ... }
     const { stdout } = await execFileAsync(
       "python3",
       [
@@ -14,8 +15,11 @@ export async function GET() {
         `
 import pandas as pd, json
 df = pd.read_csv("data/processed/combined.csv")
-names = sorted(set(df["player_name"].dropna()) | set(df["opponent_name"].dropna()))
-print(json.dumps(names))
+df["year"] = df["tourney_date"].str[:4].astype(int)
+p1 = df.groupby("player_name")["year"].min()
+p2 = df.groupby("opponent_name")["year"].min()
+combined = pd.concat([p1, p2]).groupby(level=0).min()
+print(json.dumps(combined.to_dict()))
       `,
       ],
       { cwd: process.cwd() },

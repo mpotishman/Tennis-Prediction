@@ -24,8 +24,12 @@ def build_latest_player_lookup(df, cutoff=AO_2026_START):
     return lookup
 
 
-def build_player_lookup(df, player_name):
-    filtered = df[df["tourney_date"] < AO_2026_START].sort_values("tourney_date", ascending=False)
+def build_player_lookup(df, player_name, year_end=2026):
+    end_date = f'{year_end}-12-31'
+    # cap at tournament start date so we never use data from during the event
+    if end_date > AO_2026_START:
+        end_date = AO_2026_START
+    filtered = df[df["tourney_date"] < end_date].sort_values("tourney_date", ascending=False)
     player_rows = filtered[filtered["player_name"] == player_name]
     
     if len(player_rows) == 0:
@@ -44,10 +48,10 @@ def build_player_lookup(df, player_name):
         "winrate": latest["player_winrate"],
     }
     
-def build_feature_row(df, player_name, opponent_name, round_num, player_lookup=None):
+def build_feature_row(df, player_name, opponent_name, round_num,  p1year_end, p2year_end, player_lookup=None):
     if player_lookup is None:
-        player = build_player_lookup(df, player_name)
-        opponent = build_player_lookup(df, opponent_name)
+        player = build_player_lookup(df, player_name, p1year_end)
+        opponent = build_player_lookup(df, opponent_name, p2year_end)
     else:
         player = player_lookup.get(player_name)
         opponent = player_lookup.get(opponent_name)
