@@ -1,14 +1,7 @@
 "use client";
 import { Bar } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Tooltip,
-  Legend,
-} from "chart.js";
-import React from "react";
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from "chart.js";
+import { CREAM, CREAM_GRID } from "./colors";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -31,25 +24,17 @@ export default function BarChart({ labels, values, label }) {
     responsive: true,
     plugins: {
       legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (ctx) => ` ${ctx.parsed.y} wins`,
-        },
-      },
+      tooltip: { callbacks: { label: (ctx) => ` ${ctx.parsed.y} wins` } },
     },
     scales: {
       x: {
-        ticks: { color: "#f5f0de", font: { size: 11 }, maxRotation: 45 },
-        grid: { color: "rgba(245,240,222,0.05)" },
+        ticks: { color: CREAM, font: { size: 11 }, maxRotation: 45 },
+        grid: { color: CREAM_GRID },
       },
       y: {
-        title: {
-          display: true,
-          text: "Wins out of 10,000",
-          color: "#f5f0de",
-        },
-        ticks: { color: "#f5f0de" },
-        grid: { color: "rgba(245,240,222,0.05)" },
+        title: { display: true, text: "Wins out of 10,000", color: CREAM },
+        ticks: { color: CREAM },
+        grid: { color: CREAM_GRID },
       },
     },
   };

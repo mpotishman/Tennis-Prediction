@@ -20,7 +20,6 @@ export default function BracketDisplay({ bracketInformation }) {
     return () => observer.disconnect();
   }, []);
 
-  // loop through bracket information and only select the one that most likely to advance from each bracket
   const predictedWinners = {};
   for (const [round, matches] of Object.entries(bracketInformation)) {
     predictedWinners[round] = {};

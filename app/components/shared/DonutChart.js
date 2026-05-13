@@ -1,29 +1,26 @@
 "use client";
-import React from "react";
 import { Doughnut } from "react-chartjs-2";
 import { Chart as ChartJS, ArcElement, Tooltip } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
+import { GOLD, CREAM, CREAM_FAINT, CREAM_SUBTLE } from "./colors";
+
 ChartJS.register(ArcElement, Tooltip, ChartDataLabels);
 
-export default function DonutChart({
-  player1,
-  player2,
-  player1Pct,
-  player2Pct,
-}) {
+export default function DonutChart({ player1, player2, player1Pct, player2Pct }) {
   if (!player1Pct || !player2Pct) return null;
+
   const data = {
     labels: [player1, player2],
     datasets: [
       {
         data: [player1Pct, player2Pct],
-        backgroundColor: ["#dcb24d", "rgba(245,240,222,0.1)"],
+        backgroundColor: [GOLD, CREAM_FAINT],
         borderWidth: 0,
         weight: 1,
       },
       {
         data: [100],
-        backgroundColor: ["rgba(245,240,222,0.05)"],
+        backgroundColor: [CREAM_SUBTLE],
         borderWidth: 0,
         weight: 0.4,
         datalabels: { display: false },
@@ -35,14 +32,12 @@ export default function DonutChart({
     circumference: 180,
     rotation: -90,
     cutout: "70%",
-    layout: {
-      padding: { left: 80, right: 80, top: 40 },
-    },
+    layout: { padding: { left: 80, right: 80, top: 40 } },
     plugins: {
       legend: { display: false },
       tooltip: { enabled: false },
       datalabels: {
-        color: "#f5f0de",
+        color: CREAM,
         anchor: "end",
         align: "end",
         formatter: (value, ctx) => {

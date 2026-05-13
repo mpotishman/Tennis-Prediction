@@ -1,18 +1,3 @@
-// MATCHUP PANEL — shown when the "Simulate Matchup" tab is active.
-// Receives selectedModel, selectedFeatures and their setters from page.js.
-// Result state (resultText, error, win percentages, chart players, ran) is also
-// received from page.js so it persists when switching between tabs.
-// Fetches the full player list from /api/players on mount and stores it locally.
-//
-// User flow: search and select two players → press Run → see win probability
-// On run: POSTs { player1, player2, modelType, featuresSelected } to /api/matchup
-//         which calls web_matchup.py and returns { winner, loser, winPct, modelLabel }
-//
-// Child components:
-//   PlayerDropdown  — searchable dropdown, calls onSelect when a player is chosen
-//   MatchupRunButton — triggers runMatchup()
-//   SimulationResult — displays the result or error text
-
 "use client";
 import React from "react";
 import { useState, useEffect, useRef } from "react";
@@ -92,19 +77,21 @@ export default function MatchupPanel({
   setChartPlayer1,
   chartPlayer2,
   setChartPlayer2,
+  // Player selections and year sliders lifted to page.js to persist across tab switches
+  player1,
+  setPlayer1,
+  player2,
+  setPlayer2,
+  player1YearStart,
+  setPlayer1YearStart,
+  player2YearStart,
+  setPlayer2YearStart,
 }) {
-  // Local-only state — player list and current selections don't need to persist
+  // Local-only state — player list does not need to persist (re-fetched on mount)
   const [players, setPlayers] = useState([]);
-  const [player1, setPlayer1] = useState("");
-  const [player2, setPlayer2] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // usestate for each players range of years
-  const [player1YearStart, setPlayer1YearStart] = useState(2026);
-  // const [player1YearEnd, setPlayer1YearEnd] = useState(0);
-
-  const [player2YearStart, setPlayer2YearStart] = useState(2026);
-  // const [player2YearEnd, setPlayer2YearEnd] = useState(0);
+  const bothSelected = player1 && player2;
 
   const [playerYears, setPlayerYears] = useState(2018);
 
@@ -180,6 +167,7 @@ export default function MatchupPanel({
         <div className="flex flex-col gap-4">
           <PlayerDropdown
             players={players}
+            value={player1}
             onSelect={(p) => {
               setPlayer1(p);
               setPlayer1YearStart(2026);
@@ -208,6 +196,7 @@ export default function MatchupPanel({
         <div className="flex flex-col gap-4">
           <PlayerDropdown
             players={players}
+            value={player2}
             onSelect={(p) => {
               setPlayer2(p);
               setPlayer2YearStart(2026);
@@ -232,14 +221,10 @@ export default function MatchupPanel({
       </div>
 
       <div className="">
-        <MatchupRunButton runMatchup={runMatchup} isLoading={isLoading} />
+        <MatchupRunButton runMatchup={runMatchup} isLoading={isLoading} bothSelected={bothSelected} />
       </div>
 
       <SimulationResult resultText={resultText} error={error} />
-      <div
-        className="w-full mt-auto"
-        style={{ transform: "translateY(50%)" }}
-      ></div>
       {ran && (
         <div
           ref={chartRef}

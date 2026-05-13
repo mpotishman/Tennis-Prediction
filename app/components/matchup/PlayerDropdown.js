@@ -1,6 +1,8 @@
 // PLAYER DROPDOWN — searchable dropdown for selecting a tennis player.
 // Receives the full players array from MatchupPanel (fetched from /api/players)
 // and an onSelect callback which is called with the chosen player name.
+// Accepts an optional value prop to restore the displayed name on remount
+// (e.g. when switching back to the Matchup tab).
 //
 // Filters the list in real time as the user types.
 // Closes automatically when the user clicks outside (via a mousedown listener on document).
@@ -8,10 +10,15 @@
 
 import { useState, useRef, useEffect } from "react";
 
-export default function PlayerDropdown({ players, onSelect }) {
-  const [query, setQuery] = useState("");
+export default function PlayerDropdown({ players, onSelect, value = "" }) {
+  const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
   const containerRef = useRef(null);
+
+  // sync displayed text if value prop changes (e.g. restored from lifted state)
+  useEffect(() => {
+    setQuery(value);
+  }, [value]);
 
   // close when clicking outside the component
   useEffect(() => {

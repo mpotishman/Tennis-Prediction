@@ -72,6 +72,11 @@ export default function HomePage() {
   const [mRan, setMRan] = useState(false);
   const [mChartPlayer1, setMChartPlayer1] = useState("");
   const [mChartPlayer2, setMChartPlayer2] = useState("");
+  // Player selections and year sliders — lifted so they survive tab switches
+  const [mPlayer1, setMPlayer1] = useState("");
+  const [mPlayer2, setMPlayer2] = useState("");
+  const [mPlayer1YearStart, setMPlayer1YearStart] = useState(2026);
+  const [mPlayer2YearStart, setMPlayer2YearStart] = useState(2026);
 
   const content =
     simType === 1 ? (
@@ -111,6 +116,14 @@ export default function HomePage() {
         setChartPlayer1={setMChartPlayer1}
         chartPlayer2={mChartPlayer2}
         setChartPlayer2={setMChartPlayer2}
+        player1={mPlayer1}
+        setPlayer1={setMPlayer1}
+        player2={mPlayer2}
+        setPlayer2={setMPlayer2}
+        player1YearStart={mPlayer1YearStart}
+        setPlayer1YearStart={setMPlayer1YearStart}
+        player2YearStart={mPlayer2YearStart}
+        setPlayer2YearStart={setMPlayer2YearStart}
       />
     );
 

@@ -13,14 +13,17 @@
     "@g-loot/react-tournament-brackets": "^1.0.31-rc",
     "chart.js": "^4.5.1",
     "chartjs-plugin-datalabels": "^2.2.0",
-    "next": "latest",
-    "react": "latest",
+    "next": "15.3.1",
+    "react": "19.1.0",
     "react-chartjs-2": "^5.3.1",
-    "react-dom": "latest"
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "latest",
-    "postcss": "latest",
-    "tailwindcss": "latest"
+    "@tailwindcss/postcss": "^4.1.5",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

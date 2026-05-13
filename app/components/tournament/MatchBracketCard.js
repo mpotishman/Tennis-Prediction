@@ -48,7 +48,7 @@ export default function MatchBracketCard({
   onPartyClick,
 }) {
   return (
-    <div xmlns="http://www.w3.org/1999/xhtml" className="h-full w-full p-1.5">
+    <div className="h-full w-full p-1.5">
       <div className="relative h-full w-full overflow-hidden rounded-xl border border-[#f5f0de]/10 bg-[#071f1c]/85 shadow-[0_8px_24px_rgba(6,17,16,0.4)] backdrop-blur-md">
 
         {/* match number — top left, subtle */}

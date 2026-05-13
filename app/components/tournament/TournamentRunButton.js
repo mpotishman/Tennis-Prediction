@@ -4,12 +4,18 @@
 
 import React from "react";
 
-export default function TournamentRunButton({ runSimulation, isLoading }) {
+export default function TournamentRunButton({
+  runSimulation,
+  isLoading,
+  noneSelected,
+}) {
   return (
-    <div>
-      <button className="ui-panel ui-text rounded-full px-6 py-3" onClick={runSimulation} disabled={isLoading}>
-        {isLoading ? "Running..." : "Run Tournament"}
-      </button>
-    </div>
+    <button
+      className={`ui-panel ui-text rounded-full px-6 py-3 ${!noneSelected ? "cursor-pointer" : "cursor-not-allowed opacity-40"}`}
+      onClick={runSimulation}
+      disabled={isLoading}
+    >
+      {isLoading ? "Running..." : "Run Tournament"}
+    </button>
   );
 }

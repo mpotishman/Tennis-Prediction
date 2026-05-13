@@ -57,6 +57,8 @@ export default function TournamentPanel({
     }
   }
 
+  const noneSelected = selectedFeatures.length === 0;
+
   useEffect(() => {
     if (!resultText) {
       document.body.style.overflow = "hidden";
@@ -160,6 +162,7 @@ export default function TournamentPanel({
         <TournamentRunButton
           runSimulation={runSimulation}
           isLoading={isLoading}
+          noneSelected={noneSelected}
         />
       </div>
 

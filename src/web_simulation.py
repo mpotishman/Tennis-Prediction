@@ -1,4 +1,3 @@
-from collections import Counter
 import contextlib
 import io
 import json
@@ -25,45 +24,36 @@ def main():
     random.seed(RANDOM_SEED)
     df = pd.read_csv(DATA_PATH)
 
-#     sys.argv[0]  →  "src/web_simulation.py"
-#     sys.argv[1]  →  "xgboost"
-#     sys.argv[2]  →  '["elo_gap","rank_gap"]'
     model_type = sys.argv[1] if len(sys.argv) > 1 else "xgboost"
     features_selected = json.loads(sys.argv[2]) if len(sys.argv) > 2 else None
 
     with contextlib.redirect_stdout(io.StringIO()):
         model, scaler, features = training(df, features_selected, model_type)
         champion_counts, bracket_counts = run_multiple_tournaments(
-            ao2026_r1_ordered_full_names,
-            model,
-            scaler,
-            df,
-            features,
-            SIMULATION_COUNT,
+            ao2026_r1_ordered_full_names, model, scaler, df, features, SIMULATION_COUNT,
         )
 
     winner, count = champion_counts.most_common(1)[0]
     win_pct = round((count / SIMULATION_COUNT) * 100, 1)
 
-    # convert bracket_counts {round: {match_pos: Counter}} to JSON-serialisable format
-    # each position becomes { player: pct } sorted by most likely
-    predicted_bracket = {}
-    for round_num, matches in bracket_counts.items():
-        predicted_bracket[round_num] = {
+    predicted_bracket = {
+        round_num: {
             match_pos: {
-            player: round(c / SIMULATION_COUNT * 100, 1)
-            for player, c in counter.most_common()
+                player: round(c / SIMULATION_COUNT * 100, 1)
+                for player, c in counter.most_common()
+            }
+            for match_pos, counter in matches.items()
         }
-        for match_pos, counter in matches.items()
+        for round_num, matches in bracket_counts.items()
     }
 
     print(json.dumps({
-        "winner": winner,
-        "winPct": win_pct,
-        "modelLabel": MODEL_LABELS.get(model_type, model_type),
-        "features": features,
-        "results": dict(champion_counts.most_common()),
-        "predicted_bracket": predicted_bracket
+        "winner":            winner,
+        "winPct":            win_pct,
+        "modelLabel":        MODEL_LABELS.get(model_type, model_type),
+        "features":          features,
+        "results":           dict(champion_counts.most_common()),
+        "predicted_bracket": predicted_bracket,
     }))
 
 

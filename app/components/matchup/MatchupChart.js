@@ -1,5 +1,3 @@
-import React from 'react'
-import { Doughnut } from 'react-chartjs-2'
 import DonutChart from '../shared/DonutChart'
 
 export default function MatchupChart({player1, player2, player1winPct, player2winPct}) {
