@@ -113,7 +113,7 @@ export default function BracketDisplay({ bracketInformation }) {
           matchComponent={MatchBracketCard}
           options={{
             style: {
-              boxHeight: Math.max(80, window.innerHeight / 10),
+              boxHeight: Math.max(130, window.innerHeight / 8),
               connectorColor: "rgba(245, 240, 222, 0.3)",
               connectorColorHighlight: "#f5f0de",
               svgBackground: "transparent",

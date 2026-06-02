@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from config import TOURNAMENT_K_VALUES
+from core.config import TOURNAMENT_K_VALUES
 
 
 def _expected_win_pct(player_elo: float, opponent_elo: float) -> float:

@@ -1,4 +1,4 @@
-import DonutChart from '../shared/DonutChart'
+import DonutChart from "../charts/DonutChart";
 
 export default function MatchupChart({player1, player2, player1winPct, player2winPct}) {
   return (

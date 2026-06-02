@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from config import TOURNAMENT_K_VALUES
+from core.config import TOURNAMENT_K_VALUES
 
 
 def create_two_rows(df) -> pd.DataFrame:
@@ -44,6 +44,10 @@ def create_two_rows(df) -> pd.DataFrame:
             "player_rank_points":        match["winner_rank_points"],
             "player_elo":                match["player_elo"],
             "player_surface_elo":        match["player_surface_elo"],
+            "player_hard_surface_elo":   match["player_hard_surface_elo"],
+            "player_clay_surface_elo":   match["player_clay_surface_elo"],
+            "player_grass_surface_elo":  match["player_grass_surface_elo"],
+            "player_carpet_surface_elo": match["player_carpet_surface_elo"],
             "player_hold_rate":          match["winner_hold_rate_last20"],
             "player_first_srv_win_rate": match["winner_first_srv_win_rate_last20"],
             "player_second_srv_win_rate":match["winner_second_srv_win_rate_last20"],
@@ -56,6 +60,10 @@ def create_two_rows(df) -> pd.DataFrame:
             "opponent_rank_points":      match["loser_rank_points"],
             "opponent_elo":              match["opponent_elo"],
             "opponent_surface_elo":      match["opponent_surface_elo"],
+            "opponent_hard_surface_elo": match["opponent_hard_surface_elo"],
+            "opponent_clay_surface_elo": match["opponent_clay_surface_elo"],
+            "opponent_grass_surface_elo":match["opponent_grass_surface_elo"],
+            "opponent_carpet_surface_elo":match["opponent_carpet_surface_elo"],
             "opponent_hold_rate":        match["loser_hold_rate_last20"],
             "opponent_first_srv_win_rate":match["loser_first_srv_win_rate_last20"],
             "opponent_second_srv_win_rate":match["loser_second_srv_win_rate_last20"],
@@ -84,6 +92,10 @@ def create_two_rows(df) -> pd.DataFrame:
             "player_rank_points":        match["loser_rank_points"],
             "player_elo":                match["opponent_elo"],
             "player_surface_elo":        match["opponent_surface_elo"],
+            "player_hard_surface_elo":   match["opponent_hard_surface_elo"],
+            "player_clay_surface_elo":   match["opponent_clay_surface_elo"],
+            "player_grass_surface_elo":  match["opponent_grass_surface_elo"],
+            "player_carpet_surface_elo": match["opponent_carpet_surface_elo"],
             "player_hold_rate":          match["loser_hold_rate_last20"],
             "player_first_srv_win_rate": match["loser_first_srv_win_rate_last20"],
             "player_second_srv_win_rate":match["loser_second_srv_win_rate_last20"],
@@ -96,6 +108,10 @@ def create_two_rows(df) -> pd.DataFrame:
             "opponent_rank_points":      match["winner_rank_points"],
             "opponent_elo":              match["player_elo"],
             "opponent_surface_elo":      match["player_surface_elo"],
+            "opponent_hard_surface_elo": match["player_hard_surface_elo"],
+            "opponent_clay_surface_elo": match["player_clay_surface_elo"],
+            "opponent_grass_surface_elo":match["player_grass_surface_elo"],
+            "opponent_carpet_surface_elo":match["player_carpet_surface_elo"],
             "opponent_hold_rate":        match["winner_hold_rate_last20"],
             "opponent_first_srv_win_rate":match["winner_first_srv_win_rate_last20"],
             "opponent_second_srv_win_rate":match["winner_second_srv_win_rate_last20"],

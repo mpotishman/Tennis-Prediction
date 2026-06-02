@@ -8,9 +8,9 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request) {
   try {
-    const { modelType = "xgboost", featuresSelected} = await request.json();
+    const { modelType = "xgboost", featuresSelected, tournamentSelected} = await request.json();
 
-    const { stdout } = await execFileAsync("python3", ["src/web_simulation.py", modelType, JSON.stringify(featuresSelected)], {
+    const { stdout } = await execFileAsync("python3", ["src/scripts/web_simulation.py", modelType, JSON.stringify(featuresSelected), JSON.stringify(tournamentSelected)], {
       cwd: process.cwd(),
       maxBuffer: 1024 * 1024 * 10,
       timeout: 120000,

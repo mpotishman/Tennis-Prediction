@@ -5,7 +5,7 @@
 //
 // User flow: pick a model → toggle features → press Run Tournament
 // On run: POSTs { modelType, featuresSelected } to /api/simulation
-//         which calls web_simulation.py and returns { winner, winPct, modelLabel }
+//         which calls src/scripts/web_simulation.py and returns { winner, winPct, modelLabel }
 //
 // Child components:
 //   FeatureGroup      — renders one category of feature checkboxes
@@ -13,7 +13,7 @@
 //   SimulationResult  — displays the result or error text
 
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import SimulationResult from "../shared/SimulationResult";
 import TournamentRunButton from "./TournamentRunButton";
 import FeatureGroup from "./FeatureGroup";
@@ -22,12 +22,41 @@ import TournamentChart from "./TournamentChart";
 import BracketDisplay from "./BracketDisplay";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
+const tournaments = [
+  "2026 Australian Open",
+  "2026 Roland Garros",
+  "2025 Australian Open",
+  "2025 Roland Garros",
+  "2025 Wimbledon",
+  "2025 US Open",
+  "2024 Australian Open",
+  "2024 Roland Garros",
+  "2024 Wimbledon",
+  "2024 US Open",
+  "2023 Australian Open",
+  "2023 Roland Garros",
+  "2023 Wimbledon",
+  "2023 US Open",
+  "2022 Australian Open",
+  "2022 Roland Garros",
+  "2022 Wimbledon",
+  "2022 US Open",
+  "2021 Australian Open",
+  "2021 Roland Garros",
+  "2021 Wimbledon",
+  "2021 US Open",
+  "2020 Australian Open",
+  "2020 Roland Garros",
+  "2020 US Open",
+];
 
 export default function TournamentPanel({
   selectedModel,
   setSelectedModel,
   selectedFeatures,
   setSelectedFeatures,
+  selectedTournament,
+  setSelectedTournament,
   featureMapping,
   // Result state lifted to page.js so it persists across tab switches
   resultText,
@@ -42,6 +71,9 @@ export default function TournamentPanel({
   // Local-only UI state — does not need to persist across tab switches
   const [isLoading, setIsLoading] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const containerRef = useRef(null);
 
   //  check to see if all are selected if it matches the length of all the features
   const allSelected =
@@ -89,13 +121,14 @@ export default function TournamentPanel({
         body: JSON.stringify({
           modelType: selectedModel,
           featuresSelected: selectedFeatures,
+          tournamentSelected: selectedTournament
         }),
       });
 
       const data = await response.json();
       setResults(data.results);
       setResultText(
-        `${data.modelLabel} suggests ${data.winner} to win ${data.winPct}% of the time!`,
+        `${data.modelLabel} suggests ${data.winner} wins the ${data.tournament} ${data.winPct}% of the time!`,
       );
       setPredictedBracket(data.predicted_bracket);
     } catch {
@@ -105,8 +138,50 @@ export default function TournamentPanel({
     }
   }
 
+  // close when clicking outside the component
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-col justify-center">
+      <div ref={containerRef} className="flex justify-center">
+        <div className="relative">
+          <input
+            className="rounded-full px-4 py-2 text-sm font-semibold uppercase tracking-widest bg-transparent border border-stone-50/40 text-stone-50 placeholder:text-stone-400 focus:outline-none focus:border-stone-50"
+            value={selectedTournament}
+            onChange={(e) => {
+              setSelectedTournament(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            placeholder="Select Tournament"
+          />
+
+          {open && (
+            <ul className="absolute z-10 w-full mt-2 rounded-xl border border-stone-50/20 bg-stone-900/90 backdrop-blur-sm max-h-48 overflow-y-auto">
+              {tournaments.map((tournament) => (
+                <li
+                  key={tournament}
+                  className="px-4 py-2 cursor-pointer hover:bg-stone-700 text-stone-50 text-sm uppercase tracking-widest"
+                  onClick={() => {
+                    setSelectedTournament(tournament);
+                    setOpen(false);
+                  }}
+                >
+                  {tournament}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
       {/* model selector div */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-1 mx-auto">
         <ModelSelector
@@ -117,18 +192,18 @@ export default function TournamentPanel({
           XGBoost
         </ModelSelector>
         <ModelSelector
-          value="random_forest"
-          selectedModel={selectedModel}
-          setSelectedModel={setSelectedModel}
-        >
-          Random Forest
-        </ModelSelector>
-        <ModelSelector
           value="logistic"
           selectedModel={selectedModel}
           setSelectedModel={setSelectedModel}
         >
           Logistic Regression
+        </ModelSelector>
+        <ModelSelector
+          value="random_forest"
+          selectedModel={selectedModel}
+          setSelectedModel={setSelectedModel}
+        >
+          Random Forest
         </ModelSelector>
       </div>
 

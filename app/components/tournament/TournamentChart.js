@@ -1,5 +1,5 @@
 import React from "react";
-import BarChart from "../shared/BarChart";
+import BarChart from "../charts/BarChart";
 
 export default function TournamentChart({ results }) {
   if (!results) return null;

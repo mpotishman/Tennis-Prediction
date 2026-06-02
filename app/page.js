@@ -7,8 +7,8 @@
 // does not unmount the panels' results — state persists in the parent.
 //
 // Data flow:
-//   page.js  →  TournamentPanel  →  /api/simulation  →  web_simulation.py
-//   page.js  →  MatchupPanel     →  /api/matchup     →  web_matchup.py
+//   page.js  →  TournamentPanel  →  /api/simulation  →  src/scripts/web_simulation.py
+//   page.js  →  MatchupPanel     →  /api/matchup     →  src/scripts/web_matchup.py
 //
 // Tab switching only swaps the displayed panel — it never triggers an API call.
 // API calls are triggered by the Run buttons inside each panel.
@@ -62,6 +62,7 @@ export default function HomePage() {
   const [tError, setTError] = useState("");
   const [tResults, setTResults] = useState(null);
   const [tPredictedBracket, setTPredictedBracket] = useState(null);
+  const [selectedTournament, setSelectedTournament] = useState("2026 Australian Open");
 
   // --- Matchup state lifted from MatchupPanel ---
   // Kept here so results persist when switching to the Tournament tab and back.
@@ -94,6 +95,8 @@ export default function HomePage() {
         setResults={setTResults}
         predictedBracket={tPredictedBracket}
         setPredictedBracket={setTPredictedBracket}
+        selectedTournament={selectedTournament}
+        setSelectedTournament={setSelectedTournament}
       />
     ) : (
       <MatchupPanel

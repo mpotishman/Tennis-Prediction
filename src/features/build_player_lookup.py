@@ -1,15 +1,47 @@
+# Builds player stat snapshots used during simulation.
+# build_latest_player_lookup: returns every player's most recent stats before a cutoff date (used in tournament simulation).
+# build_feature_row: builds a single feature row for a head-to-head matchup prediction.
+
 import sys
 from pathlib import Path
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from config import AO_2026_START
+from core.tournament_mapping import TOURNAMENT_METADATA
+
+SURFACE_ELO_COLUMNS = {
+    "Hard": "player_hard_surface_elo",
+    "Clay": "player_clay_surface_elo",
+    "Grass": "player_grass_surface_elo",
+    "Carpet": "player_carpet_surface_elo",
+}
+
+DEFAULT_MATCH_CONTEXT = {
+    "start_date": "2026-12-31",
+    "surface": "Hard",
+    "surface_code": 0,
+    "tourney_level_code": 4,
+    "tourney_k_value": 1.0,
+    "best_of": 5,
+}
+
+
+def _row_value(row, column: str, fallback=None):
+    if column in row.index:
+        return row[column]
+    return fallback
 
 
 def _extract_stats(row) -> dict:
+    fallback_surface_elo = row["player_surface_elo"]
+
     return {
         "elo":                  row["player_elo"],
-        "surface_elo":          row["player_surface_elo"],
+        "surface_elo":          fallback_surface_elo,
+        "surface_elos": {
+            surface: _row_value(row, column, fallback_surface_elo)
+            for surface, column in SURFACE_ELO_COLUMNS.items()
+        },
         "rank":                 row["player_rank"],
         "rank_points":          row["player_rank_points"],
         "last_match_date":      row["tourney_date"],
@@ -20,23 +52,52 @@ def _extract_stats(row) -> dict:
     }
 
 
-def build_latest_player_lookup(df, cutoff: str = AO_2026_START) -> dict:
+def _filtered_before(df, cutoff):
+    cutoff_date = pd.Timestamp(cutoff)
+    tourney_dates = pd.to_datetime(df["tourney_date"])
+    filtered = df.loc[tourney_dates < cutoff_date].copy()
+    filtered["_lookup_tourney_date"] = tourney_dates.loc[filtered.index]
+    return filtered.sort_values("_lookup_tourney_date", ascending=False)
+
+
+def build_latest_player_lookup(df, cutoff) -> dict:
     """Return each player's most recent stats before the cutoff date."""
-    filtered = df[df["tourney_date"] < cutoff].sort_values("tourney_date", ascending=False)
+    filtered = _filtered_before(df, cutoff)
     latest_rows = filtered.drop_duplicates(subset=["player_name"], keep="first")
     return {row["player_name"]: _extract_stats(row) for _, row in latest_rows.iterrows()}
 
 
-def build_player_lookup(df, player_name: str, year_end: int = 2026) -> dict | None:
-    """Return a single player's most recent stats up to year_end (capped at AO start)."""
-    end_date = min(f"{year_end}-12-31", AO_2026_START)
-    filtered = df[df["tourney_date"] < end_date].sort_values("tourney_date", ascending=False)
+def build_player_lookup(df, player_name: str, year_end: int = 2026, cutoff=None) -> dict | None:
+    """Return a single player's most recent stats before cutoff/year_end."""
+    end_date = cutoff or f"{year_end}-12-31"
+    filtered = _filtered_before(df, end_date)
     player_rows = filtered[filtered["player_name"] == player_name]
 
     if player_rows.empty:
         return None
 
     return _extract_stats(player_rows.iloc[0])
+
+
+def _metadata_for(tournament_selected: str | None, p1year_end: int, p2year_end: int) -> dict:
+    if tournament_selected is None:
+        context = DEFAULT_MATCH_CONTEXT.copy()
+        context["start_date"] = f"{max(int(p1year_end), int(p2year_end))}-12-31"
+        return context
+
+    metadata = TOURNAMENT_METADATA.get(tournament_selected)
+    if metadata is None:
+        raise ValueError(f"Unknown tournament: {tournament_selected}")
+    if not metadata.get("start_date"):
+        raise ValueError(f"{tournament_selected} does not have a playable start date.")
+    return metadata
+
+
+def _surface_elo(stats: dict, surface: str) -> float:
+    value = stats["surface_elos"].get(surface, stats["surface_elo"])
+    if pd.isna(value):
+        return stats["surface_elo"]
+    return value
 
 
 def build_feature_row(
@@ -47,11 +108,15 @@ def build_feature_row(
     p1year_end: int,
     p2year_end: int,
     player_lookup: dict | None = None,
+    tournament_selected: str | None = None,
 ) -> dict | None:
     """Build a single feature row for a hypothetical matchup."""
+    metadata = _metadata_for(tournament_selected, p1year_end, p2year_end)
+
     if player_lookup is None:
-        player = build_player_lookup(df, player_name, p1year_end)
-        opponent = build_player_lookup(df, opponent_name, p2year_end)
+        cutoff = metadata["start_date"] if tournament_selected is not None else None
+        player = build_player_lookup(df, player_name, p1year_end, cutoff=cutoff)
+        opponent = build_player_lookup(df, opponent_name, p2year_end, cutoff=cutoff)
     else:
         player = player_lookup.get(player_name)
         opponent = player_lookup.get(opponent_name)
@@ -59,22 +124,28 @@ def build_feature_row(
     if player is None or opponent is None:
         return None
 
-    ao_start = pd.Timestamp(AO_2026_START)
-    player_rest = (ao_start - pd.Timestamp(player["last_match_date"])).days
-    opponent_rest = (ao_start - pd.Timestamp(opponent["last_match_date"])).days
+    surface = metadata["surface"]
+
+    if tournament_selected is None:
+        days_rest_gap = 0
+    else:
+        start = pd.Timestamp(metadata["start_date"])
+        player_rest = (start - pd.Timestamp(player["last_match_date"])).days
+        opponent_rest = (start - pd.Timestamp(opponent["last_match_date"])).days
+        days_rest_gap = player_rest - opponent_rest
 
     return {
         "elo_gap":                  player["elo"] - opponent["elo"],
-        "tourney_k_value":          1.0,
-        "best_of":                  5,
-        "surface":                  0,
-        "tourney_level":            4,
+        "tourney_k_value":          metadata["tourney_k_value"],
+        "best_of":                  metadata["best_of"],
+        "surface":                  metadata["surface_code"],
+        "tourney_level":            metadata["tourney_level_code"],
         "round":                    round_num,
         "winrate_gap":              (player["winrate"] - opponent["winrate"]) * 100,
-        "surface_elo_gap":          player["surface_elo"] - opponent["surface_elo"],
+        "surface_elo_gap":          _surface_elo(player, surface) - _surface_elo(opponent, surface),
         "rank_gap":                 player["rank"] - opponent["rank"],
         "rank_points_gap":          player["rank_points"] - opponent["rank_points"],
-        "days_rest_gap":            player_rest - opponent_rest,
+        "days_rest_gap":            days_rest_gap,
         "hold_rate_gap":            player["hold_rate"] - opponent["hold_rate"],
         "first_srv_win_rate_gap":   player["first_srv_win_rate"] - opponent["first_srv_win_rate"],
         "second_srv_win_rate_gap":  player["second_srv_win_rate"] - opponent["second_srv_win_rate"],

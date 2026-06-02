@@ -20,7 +20,7 @@ export async function POST(request) {
     const { stdout } = await execFileAsync(
       "python3",
       [
-        "src/web_matchup.py",
+        "src/scripts/web_matchup.py",
         player1,
         player2,
         modelType,
