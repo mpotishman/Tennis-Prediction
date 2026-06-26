@@ -21,21 +21,43 @@ def get_match_probability(
     p1year_end: int = 2026,
     p2year_end: int = 2026,
     tournament_selected: str | None = None,
+    bad_matchups: set | None = None,
 ) -> float:
     """Return P(p1 beats p2), using the cache to avoid recomputing."""
     cache_key = (tournament_selected, round_num, p1, p2)
     if cache_key in probability_cache:
         return probability_cache[cache_key]
 
-    players_comparison = build_player_lookup.build_feature_row(
+    player_missing, opponent_missing, players_comparison = build_player_lookup.build_feature_row(
         df, p1, p2, round_num, p1year_end, p2year_end,
         player_lookup=player_lookup_cache,
         tournament_selected=tournament_selected,
     )
 
     if players_comparison is None:
-        probability_cache[cache_key] = 0.5
-        return 0.5
+        if player_missing and opponent_missing:
+            prob = 0.5
+        elif player_missing:
+            prob = 0.25
+        elif opponent_missing:
+            prob = 0.75
+
+        # Only record genuine first-round matches. Rounds 2+ are hypothetical
+        # pairings that only occur because a data-less player won a coin-flip in
+        # some simulation, which would inflate the list massively.
+        if bad_matchups is not None and round_num == 1:
+            bad_matchups.add((
+                tournament_selected,
+                round_num,
+                p1,
+                p2,
+                player_missing,
+                opponent_missing,
+                prob,
+            ))
+
+        probability_cache[cache_key] = prob
+        return prob
 
     players_comparison_df = pd.DataFrame([players_comparison])[features]
 
@@ -60,12 +82,14 @@ def simulate_match(
     features: list,
     player_lookup_cache: dict | None,
     probability_cache: dict,
+    bad_matchups: set | None = None,
     tournament_selected: str | None = None,
 ) -> str:
     """Simulate a single match and return the winner's name."""
     prob = get_match_probability(
         p1, p2, round_num, model, scaler, df, features,
         player_lookup_cache, probability_cache,
+        bad_matchups=bad_matchups,
         tournament_selected=tournament_selected,
     )
     return p1 if random.random() < prob else p2
@@ -79,6 +103,7 @@ def run_tournament_once(
     features: list,
     player_lookup_cache: dict | None,
     probability_cache: dict,
+    bad_matchups: set | None = None,
     tournament_selected: str | None = None,
 ) -> tuple[str, dict]:
     """Simulate a full single-elimination tournament and return (winner, round results)."""
@@ -94,6 +119,7 @@ def run_tournament_once(
                 bracket[i], bracket[i + 1], round_num,
                 model, scaler, df, features,
                 player_lookup_cache, probability_cache,
+                bad_matchups=bad_matchups,
                 tournament_selected=tournament_selected,
             )
             next_round.append(winner)
@@ -112,8 +138,9 @@ def run_multiple_tournaments(
     features: list,
     n: int,
     tournament_selected: str,
-) -> tuple[Counter, dict]:
+) -> tuple[Counter, dict, set]:
     """Run n tournament simulations and aggregate results."""
+    bad_matchups: set = set()
     metadata = TOURNAMENT_METADATA.get(tournament_selected)
     if metadata is None:
         raise ValueError(f"Unknown tournament: {tournament_selected}")
@@ -132,6 +159,7 @@ def run_multiple_tournaments(
         winner, bracket_results = run_tournament_once(
             bracket, model, scaler, df, features,
             player_lookup_cache, probability_cache,
+            bad_matchups=bad_matchups,
             tournament_selected=tournament_selected,
         )
         champion_counts[winner] += 1
@@ -144,4 +172,4 @@ def run_multiple_tournaments(
                     bracket_counts[round_num][match_pos] = Counter()
                 bracket_counts[round_num][match_pos][player] += 1
 
-    return champion_counts, bracket_counts
+    return champion_counts, bracket_counts, bad_matchups

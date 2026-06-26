@@ -47,7 +47,7 @@ def main():
 
     with contextlib.redirect_stdout(io.StringIO()):
         model, scaler, features = training(df, tournament_start_date, model_type, features_selected)
-        champion_counts, bracket_counts = run_multiple_tournaments(
+        champion_counts, bracket_counts, bad_matchups = run_multiple_tournaments(
             TOURNAMENT_MATCHUP_MAPS[tournament_selected], model, scaler, df, features, SIMULATION_COUNT, tournament_selected
         )
 
@@ -65,6 +65,20 @@ def main():
         for round_num, matches in bracket_counts.items()
     }
 
+    bad_matchups = [
+        {
+            "tournament": tournament,
+            "round": round_num,
+            "player": player,
+            "opponent": opponent,
+            "player_missing": player_missing,
+            "opponent_missing": opponent_missing,
+            "fallback_probability": round(prob * 100, 1),
+        }
+        for tournament, round_num, player, opponent, player_missing, opponent_missing, prob
+        in sorted(bad_matchups)
+    ]
+
     print(json.dumps({
         "winner":            winner,
         "winPct":            win_pct,
@@ -72,6 +86,7 @@ def main():
         "features":          features,
         "results":           dict(champion_counts.most_common()),
         "predicted_bracket": predicted_bracket,
+        "bad_matchups":      bad_matchups,
         "tournament":        tournament_selected,
     }))
 

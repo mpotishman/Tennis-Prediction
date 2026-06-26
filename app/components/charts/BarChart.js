@@ -1,6 +1,13 @@
 "use client";
 import { Bar } from "react-chartjs-2";
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from "chart.js";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Tooltip,
+  Legend,
+} from "chart.js";
 import { CREAM, CREAM_GRID } from "../shared/colors";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
@@ -32,7 +39,7 @@ export default function BarChart({ labels, values, label }) {
         grid: { color: CREAM_GRID },
       },
       y: {
-        title: { display: true, text: "Wins out of 10,000", color: CREAM },
+        title: { display: true, text: "Wins out of 1,000", color: CREAM },
         ticks: { color: CREAM },
         grid: { color: CREAM_GRID },
       },

@@ -23,6 +23,7 @@ import BracketDisplay from "./BracketDisplay";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
 const tournaments = [
+  "2026 Wimbledon",
   "2026 Australian Open",
   "2026 Roland Garros",
   "2025 Australian Open",
@@ -67,6 +68,8 @@ export default function TournamentPanel({
   setResults,
   predictedBracket,
   setPredictedBracket,
+  badMatchups,
+  setBadMatchups,
 }) {
   // Local-only UI state — does not need to persist across tab switches
   const [isLoading, setIsLoading] = useState(false);
@@ -121,7 +124,7 @@ export default function TournamentPanel({
         body: JSON.stringify({
           modelType: selectedModel,
           featuresSelected: selectedFeatures,
-          tournamentSelected: selectedTournament
+          tournamentSelected: selectedTournament,
         }),
       });
 
@@ -130,6 +133,9 @@ export default function TournamentPanel({
       setResultText(
         `${data.modelLabel} suggests ${data.winner} wins the ${data.tournament} ${data.winPct}% of the time!`,
       );
+      // Python sends this as snake_case `bad_matchups` (see web_simulation.py)
+      console.log("Raw bad matchups:", data.bad_matchups);
+      setBadMatchups(data.bad_matchups ?? null);
       setPredictedBracket(data.predicted_bracket);
     } catch {
       setError("Could not run simulation right now.");
@@ -242,9 +248,11 @@ export default function TournamentPanel({
       </div>
 
       {resultText && (
-        <>
-          <div className="fade-in-down" style={{ animationDelay: "0s" }}>
-            <SimulationResult resultText={resultText} error={error} />
+        <div>
+          <div className="flex relative mt-6 justify-center gap-4 items-center">
+            <div className="fade-in-down" style={{ animationDelay: "0s" }}>
+              <SimulationResult resultText={resultText} error={error} />
+            </div>
           </div>
 
           <div className="fade-in-down" style={{ animationDelay: "0.2s" }}>
@@ -259,7 +267,7 @@ export default function TournamentPanel({
               <>
                 <div className="flex justify-center gap-16 items-center">
                   <div className="text-balance font-serif text-xl">
-                    Most common bracket matchups over the 10,000 simulations:
+                    Most common bracket matchups over the 1,000 simulations:
                   </div>
                   <div className="relative">
                     <FontAwesomeIcon
@@ -278,9 +286,33 @@ export default function TournamentPanel({
   before:-translate-x-1/2 before:border-8 before:border-transparent
   before:border-t-[#0a1f1c]"
                       >
-                        The percentage is how likely each player goes through.
-                        Later rounds don&apos;t add up to 100% due to potential
-                        upsets in other simulations.
+                        <p className="m-0">
+                          The percentage is how likely each player goes through.
+                          Later rounds don&apos;t add up to 100% due to potential
+                          upsets in other simulations.
+                        </p>
+                        {Array.isArray(badMatchups) &&
+                          badMatchups.length > 0 && (
+                            <>
+                              <p className="mt-3 mb-1 font-semibold">
+                                First-round matchups where at least one player has no data:
+                              </p>
+                              <ul className="m-0 pl-4">
+                                {badMatchups.map((m, i) => (
+                                  <li key={i} className="mb-1 text-[11px]">
+                                    <strong>{m.player}</strong> vs {m.opponent}
+                                    {m.player_missing &&
+                                      " [missing player data]"}
+                                    {m.opponent_missing &&
+                                      " [missing opponent data]"}
+                                  </li>
+                                ))}
+                                <p className="mt-3 mb-1 font-semibold">
+                                  Players with no prior data have a 25% chance of advancing. If both players have no prior data, the winner is decided by a coin toss.
+                                </p>
+                              </ul>
+                            </>
+                          )}
                       </div>
                     )}
                   </div>
@@ -289,7 +321,7 @@ export default function TournamentPanel({
               </>
             )}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

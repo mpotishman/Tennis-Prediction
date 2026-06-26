@@ -64,6 +64,9 @@ export default function HomePage() {
   const [tPredictedBracket, setTPredictedBracket] = useState(null);
   const [selectedTournament, setSelectedTournament] = useState("2026 Australian Open");
 
+  // set the badmatchups state if there is
+  const [badMatchups, setBadMatchups] = useState(null);
+
   // --- Matchup state lifted from MatchupPanel ---
   // Kept here so results persist when switching to the Tournament tab and back.
   const [mResultText, setMResultText] = useState("");
@@ -97,6 +100,8 @@ export default function HomePage() {
         setPredictedBracket={setTPredictedBracket}
         selectedTournament={selectedTournament}
         setSelectedTournament={setSelectedTournament}
+        badMatchups={badMatchups}
+        setBadMatchups={setBadMatchups}
       />
     ) : (
       <MatchupPanel

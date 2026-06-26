@@ -8,7 +8,7 @@ export default function SimulationResult({ resultText, error }) {
   }
 
   return (
-    <div className="mt-6 text-center">
+    <div className="text-center">
       {resultText ? (
         <p className="text-balance font-serif text-xl text-stone-50">
           {resultText}
