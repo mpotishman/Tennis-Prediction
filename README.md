@@ -23,12 +23,14 @@ https://github.com/user-attachments/assets/00382644-7552-48f6-8ec1-3b26e27426fa
 
 **Choosing features:** before running, pick exactly which features the model trains and tests on — toggle them one by one or select all at once. This makes it easy to see how much each signal (ELO, serve stats, form…) actually moves the prediction.
 
-<img width="948" height="580" alt="image" src="https://github.com/user-attachments/assets/67ac6650-a4d7-4955-b564-a02111a802bf" />
-<img width="948" height="580" alt="image" src="https://github.com/user-attachments/assets/c35c4a79-a6f1-4b75-9b2d-5683146aa10b" />
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/67ac6650-a4d7-4955-b564-a02111a802bf" width="49%" alt="All features selected" />
+  <img src="https://github.com/user-attachments/assets/c35c4a79-a6f1-4b75-9b2d-5683146aa10b" width="49%" alt="No features selected" />
+</p>
 
 ### ⚔️ Matchup Simulation
 
-Pit any two players head-to-head for a win probability. **Year sliders** let you choose which season of each player to use, so you can run **Djokovic (2015) vs Sinner (2026)** — and the model correctly uses *only each player's data up to that year*, enabling fair cross-era comparisons.
+Pit any two players head-to-head for a win probability. **Year sliders** let you choose which season of each player to use, so you can run **Djokovic (2015) vs Sinner (2025)** — and the model correctly uses *only each player's data up to that year*, enabling fair cross-era comparisons.
 
 https://github.com/user-attachments/assets/da35df84-b553-448c-8446-e171190ccb0a
 
