@@ -1,4 +1,4 @@
-# Tennis Predictor: AI tool for predicting tennis tournaments and hypothetical matchups
+# Tennis Predictor: AI tool for predicting Mens tennis tournaments and hypothetical matchups
 
 🎾 Machine learning powered website with access to decades of tennis data that outputs full tournament and head-to-head matchup simulations.
 
