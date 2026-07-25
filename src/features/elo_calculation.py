@@ -1,3 +1,4 @@
+import math
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -27,7 +28,19 @@ def calculate_elo(
     player_expected = _expected_win_pct(player_pre_elo, opponent_pre_elo)
     opponent_expected = 1 - player_expected
 
-    k = tourney_k_value[match["tourney_level"]]
+    # Scale the update by how dominant the win was. "player" is the match
+    # winner at this stage, so winner_games are the player's games.
+    winner_games = match["winner_games"]
+    loser_games = match["loser_games"]
+    if math.isnan(winner_games) or math.isnan(loser_games):
+        margin_multiplier = 1.0  # retirement / walkover — no margin info
+    else:
+        game_margin = max(winner_games - loser_games, 0)
+        elo_diff = player_pre_elo - opponent_pre_elo  # winner's pre-match edge
+        margin_multiplier = math.log(game_margin + 1) * (2.2 / (elo_diff * 0.001 + 2.2))
+        margin_multiplier = min(max(margin_multiplier, 0.5), 2.0)  # floor + cap
+
+    k = tourney_k_value[match["tourney_level"]] * margin_multiplier
     players_elo[player_name] = player_pre_elo + k * (1 - player_expected)
     players_elo[opponent_name] = opponent_pre_elo + k * (0 - opponent_expected)
 

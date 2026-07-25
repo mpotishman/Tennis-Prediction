@@ -6,12 +6,14 @@ import os
 import sys
 from pathlib import Path
 
+
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from features import create_two_rows
 from features import add_raw_data
+from features import score_dominance
 
 # ============================================================
 # LOAD
@@ -30,6 +32,12 @@ for filename in os.listdir(directory_path):
 all_data = pd.concat(all_data).reset_index(drop=True)
 all_data["tourney_date"] = pd.to_datetime(all_data["tourney_date"], format="%Y%m%d")
 all_data["match_num"] = pd.to_numeric(all_data["match_num"], errors="coerce")
+
+
+# parse each score string into games won by the winner / loser
+games = all_data["score"].apply(lambda s: pd.Series(score_dominance.get_player_games(s)))
+all_data["winner_games"] = pd.to_numeric(games[0], errors="coerce")
+all_data["loser_games"] = pd.to_numeric(games[1], errors="coerce")
 
 serve_stat_columns = [
     "w_svpt", "w_1stIn", "w_1stWon", "w_2ndWon", "w_SvGms", "w_bpSaved", "w_bpFaced",
@@ -65,3 +73,4 @@ print(f"Reshaped to {len(all_data)} rows (expected {expected_total_rows * 2})")
 output_path = PROJECT_ROOT / "data" / "processed" / "combined.csv"
 all_data.to_csv(output_path, index=False)
 print(f"Saved to {output_path} — shape: {all_data.shape}")
+

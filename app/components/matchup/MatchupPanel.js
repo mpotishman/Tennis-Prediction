@@ -113,7 +113,10 @@ export default function MatchupPanel({
           player1,
           player2,
           modelType: selectedModel,
-          featuresSelected: selectedFeatures,
+          // Matchup has no feature selector, so always use the full feature set —
+          // never the tournament tab's selection (which may exclude the gap
+          // features that distinguish players and collapse results to 50/50).
+          featuresSelected: Object.values(featureMapping).flatMap(Object.keys),
           p1year_end: player1YearStart,
           p2year_end: player2YearStart,
         }),

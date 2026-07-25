@@ -37,6 +37,9 @@ def main():
     features_selected = json.loads(sys.argv[2]) if len(sys.argv) > 2 else None
     tournament_selected = json.loads(sys.argv[3]) if len(sys.argv) > 3 else None
 
+    if features_selected is not None:
+        features_selected = [feature for feature in features_selected if feature != "h2h_gap"]
+
     metadata = TOURNAMENT_METADATA.get(tournament_selected)
     if metadata is None:
         raise ValueError(f"Unknown tournament: {tournament_selected}")

@@ -5,6 +5,8 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from core.config import TOURNAMENT_K_VALUES
 
+# NEXT TIME, GET MATCH["WINNER_GAMES"] AND PUT IT AS PLAYER AND OPPONENT GAMES, AND ADD WINNER_GAMES/WINNER_GAMES+LOSER_GAMES FOR PERCENTAGE OF GAMES WON
+
 
 def create_two_rows(df) -> pd.DataFrame:
     """Expand each match into two rows — one per player — with all gap features."""
@@ -21,6 +23,9 @@ def create_two_rows(df) -> pd.DataFrame:
             "best_of":         match["best_of"],
             "round":           match["round"],
         }
+    
+        
+        
 
         elo_gap            = match["player_elo"] - match["opponent_elo"]
         winrate_gap        = 100 * (match["player_winrate_last_10"] - match["opponent_winrate_last_10"])
@@ -51,7 +56,12 @@ def create_two_rows(df) -> pd.DataFrame:
             "player_hold_rate":          match["winner_hold_rate_last20"],
             "player_first_srv_win_rate": match["winner_first_srv_win_rate_last20"],
             "player_second_srv_win_rate":match["winner_second_srv_win_rate_last20"],
+            "player_first_in_rate":      match["winner_first_in_rate_last20"],
+            "player_p_serve":            match["winner_p_serve_last20"],
             "player_winrate":            match["player_winrate_last_10"],
+            "player_won_games":          match["winner_games"],
+            "player_won_games_percentage": (match["winner_games"]/(match["winner_games"] + match["loser_games"])) * 100,
+                        
             "opponent_name":             match["loser_name"],
             "opponent_hand":             match["loser_hand"],
             "opponent_ht":               match["loser_ht"],
@@ -67,7 +77,12 @@ def create_two_rows(df) -> pd.DataFrame:
             "opponent_hold_rate":        match["loser_hold_rate_last20"],
             "opponent_first_srv_win_rate":match["loser_first_srv_win_rate_last20"],
             "opponent_second_srv_win_rate":match["loser_second_srv_win_rate_last20"],
+            "opponent_first_in_rate":    match["loser_first_in_rate_last20"],
+            "opponent_p_serve":          match["loser_p_serve_last20"],
             "opponent_winrate":          match["opponent_winrate_last_10"],
+            "opponent_won_games":          match["loser_games"],
+            "opponent_won_games_percentage": (match["loser_games"]/(match["winner_games"] + match["loser_games"])) * 100,
+            
             "elo_gap":                   elo_gap,
             "winrate_gap":               winrate_gap,
             "surface_elo_gap":           surface_elo_gap,
@@ -99,7 +114,12 @@ def create_two_rows(df) -> pd.DataFrame:
             "player_hold_rate":          match["loser_hold_rate_last20"],
             "player_first_srv_win_rate": match["loser_first_srv_win_rate_last20"],
             "player_second_srv_win_rate":match["loser_second_srv_win_rate_last20"],
+            "player_first_in_rate":      match["loser_first_in_rate_last20"],
+            "player_p_serve":            match["loser_p_serve_last20"],
             "player_winrate":            match["opponent_winrate_last_10"],
+            "player_won_games":          match["loser_games"],
+            "player_won_games_percentage": (match["loser_games"]/(match["winner_games"] + match["loser_games"])) * 100,
+            
             "opponent_name":             match["winner_name"],
             "opponent_hand":             match["winner_hand"],
             "opponent_ht":               match["winner_ht"],
@@ -115,7 +135,12 @@ def create_two_rows(df) -> pd.DataFrame:
             "opponent_hold_rate":        match["winner_hold_rate_last20"],
             "opponent_first_srv_win_rate":match["winner_first_srv_win_rate_last20"],
             "opponent_second_srv_win_rate":match["winner_second_srv_win_rate_last20"],
+            "opponent_first_in_rate":    match["winner_first_in_rate_last20"],
+            "opponent_p_serve":          match["winner_p_serve_last20"],
             "opponent_winrate":          match["player_winrate_last_10"],
+            "opponent_won_games":          match["winner_games"],
+            "opponent_won_games_percentage": (match["winner_games"]/(match["winner_games"] + match["loser_games"])) * 100,
+            
             "elo_gap":                   -elo_gap,
             "winrate_gap":               -winrate_gap,
             "surface_elo_gap":           -surface_elo_gap,

@@ -56,9 +56,87 @@
   z-index: 1;
 }
 
+.siteNav {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: min(28rem, 100%);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.4rem;
+  margin-bottom: -0.8rem;
+  padding: 0 0 0.55rem;
+  border-bottom: 1px solid rgba(245, 240, 222, 0.16);
+}
+
+.siteNavMarker {
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: calc((100% - 1.4rem) / 2);
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, #f5f0de 16%, #dcb24d 50%, #f5f0de 84%, transparent);
+  box-shadow: 0 0 20px rgba(220, 178, 77, 0.42);
+  transition: transform 240ms ease;
+}
+
+.siteNav[data-active="evaluation"] .siteNavMarker {
+  transform: translateX(calc(100% + 1.4rem));
+}
+
+.siteNavButton {
+  position: relative;
+  z-index: 1;
+  border: 0;
+  background: transparent;
+  color: rgba(245, 240, 222, 0.48);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  line-height: 1.1;
+  padding: 0;
+  text-transform: uppercase;
+  transition:
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.siteNavButton:hover,
+.siteNavButton[aria-current="page"] {
+  color: #f5f0de;
+}
+
+.siteNavButton[aria-current="page"] {
+  transform: translateY(-1px);
+}
+
+.siteNavButton:focus-visible {
+  border-radius: 0.25rem;
+  outline: 2px solid rgba(220, 178, 77, 0.85);
+  outline-offset: 0.35rem;
+}
+
 @media (max-width: 640px) {
   .glow {
     width: 14rem;
     height: 14rem;
+  }
+
+  .siteNav {
+    gap: 0.9rem;
+  }
+
+  .siteNavMarker {
+    width: calc((100% - 0.9rem) / 2);
+  }
+
+  .siteNav[data-active="evaluation"] .siteNavMarker {
+    transform: translateX(calc(100% + 0.9rem));
+  }
+
+  .siteNavButton {
+    font-size: 0.64rem;
+    letter-spacing: 0.1em;
   }
 }

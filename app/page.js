@@ -19,6 +19,7 @@ import React, { useState } from "react";
 import TabButton from "./components/shared/TabButton";
 import TournamentPanel from "./components/tournament/TournamentPanel";
 import MatchupPanel from "./components/matchup/MatchupPanel";
+import ModelEvaluationPanel from "./components/evaluation/ModelEvaluationPanel";
 import styles from "./page.module.css";
 
 const FEATURE_MAPPING = {
@@ -40,6 +41,7 @@ const FEATURE_MAPPING = {
     rank_gap: "Ranking Gap",
     rank_points_gap: "Ranking Points Gap",
     winrate_gap: "Recent Win Rate Gap",
+    h2h_gap: "Head-to-Head Gap",
   },
 
   "Serve Performance": {
@@ -50,6 +52,7 @@ const FEATURE_MAPPING = {
 };
 
 export default function HomePage() {
+  const [activeSection, setActiveSection] = useState("predict");
   const [simType, setSimType] = useState(1);
   const [selectedModel, setSelectedModel] = useState("xgboost");
   const [selectedFeatures, setSelectedFeatures] = useState(
@@ -82,7 +85,7 @@ export default function HomePage() {
   const [mPlayer1YearStart, setMPlayer1YearStart] = useState(2026);
   const [mPlayer2YearStart, setMPlayer2YearStart] = useState(2026);
 
-  const content =
+  const simulatorContent =
     simType === 1 ? (
       <TournamentPanel
         selectedModel={selectedModel}
@@ -142,6 +145,30 @@ export default function HomePage() {
       <div aria-hidden="true" className={styles.glow} />
       <div aria-hidden="true" className={styles.frame} />
       <div className="relative z-10 flex w-full max-w-[1400px] flex-col items-center gap-8 pb-16 text-center">
+        <nav
+          className={styles.siteNav}
+          data-active={activeSection}
+          aria-label="Primary"
+        >
+          <span aria-hidden="true" className={styles.siteNavMarker} />
+          <button
+            aria-current={activeSection === "predict" ? "page" : undefined}
+            className={styles.siteNavButton}
+            onClick={() => setActiveSection("predict")}
+            type="button"
+          >
+            Predict
+          </button>
+          <button
+            aria-current={activeSection === "evaluation" ? "page" : undefined}
+            className={styles.siteNavButton}
+            onClick={() => setActiveSection("evaluation")}
+            type="button"
+          >
+            Model Evaluation
+          </button>
+        </nav>
+
         <h1
           className={`${styles.title} text-[clamp(3.5rem,10vw,7rem)] font-semibold uppercase leading-[0.92] tracking-[0.16em] text-stone-50 drop-shadow-[0_18px_40px_rgba(6,17,16,0.35)]`}
         >
@@ -149,15 +176,21 @@ export default function HomePage() {
         </h1>
 
         <div className="flex w-full flex-col gap-3">
-          <div className="flex gap-2 justify-center ">
-            <TabButton onClick={() => setSimType(1)} isActive={simType === 1}>
-              Simulate Tournament
-            </TabButton>
-            <TabButton onClick={() => setSimType(2)} isActive={simType === 2}>
-              Simulate Matchup
-            </TabButton>
-          </div>
-          <div className="w-full">{content}</div>
+          {activeSection === "predict" ? (
+            <>
+              <div className="flex gap-2 justify-center ">
+                <TabButton onClick={() => setSimType(1)} isActive={simType === 1}>
+                  Simulate Tournament
+                </TabButton>
+                <TabButton onClick={() => setSimType(2)} isActive={simType === 2}>
+                  Simulate Matchup
+                </TabButton>
+              </div>
+              <div className="w-full">{simulatorContent}</div>
+            </>
+          ) : (
+            <ModelEvaluationPanel />
+          )}
         </div>
       </div>
     </main>

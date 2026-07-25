@@ -131,6 +131,47 @@ def _surface_elo(stats: dict, surface: str) -> float:
     return value
 
 
+def _h2h_gap(df, player_name: str, opponent_name: str, cutoff) -> float:
+    """Return current head-to-head gap: +1 all player wins, -1 all opponent wins."""
+    # Filter by names first so the date conversion only runs on the few
+    # meeting rows, not the whole dataset.
+    meetings = df[
+        df["player_name"].eq(player_name)
+        & df["opponent_name"].eq(opponent_name)
+    ]
+
+    if meetings.empty:
+        # Only fall back to fuzzy matching when a name isn't in the data at
+        # all — if both names exist exactly, the players genuinely never met,
+        # and the full-column canonical scan below is expensive.
+        names_known = (
+            df["player_name"].eq(player_name).any()
+            and df["player_name"].eq(opponent_name).any()
+        )
+        if names_known:
+            return 0.0
+
+        player_key = canonical_name(player_name)
+        opponent_key = canonical_name(opponent_name)
+        meetings = df[
+            df["player_name"].apply(canonical_name).eq(player_key)
+            & df["opponent_name"].apply(canonical_name).eq(opponent_key)
+        ]
+
+    if meetings.empty:
+        return 0.0
+
+    results = meetings.loc[
+        pd.to_datetime(meetings["tourney_date"]) < pd.Timestamp(cutoff),
+        "result",
+    ]
+
+    if results.empty:
+        return 0.0
+
+    return (2 * results.mean()) - 1
+
+
 def build_feature_row(
     df,
     player_name: str,
@@ -140,6 +181,7 @@ def build_feature_row(
     p2year_end: int,
     player_lookup: dict | None = None,
     tournament_selected: str | None = None,
+    include_h2h: bool = False,
 ) -> dict | None:
     """Build a single feature row for a hypothetical matchup."""
     metadata = _metadata_for(tournament_selected, p1year_end, p2year_end)
@@ -167,8 +209,8 @@ def build_feature_row(
         player_rest = (start - pd.Timestamp(player["last_match_date"])).days
         opponent_rest = (start - pd.Timestamp(opponent["last_match_date"])).days
         days_rest_gap = player_rest - opponent_rest
-        
-    return False, False, {
+
+    feature_row = {
             "elo_gap":                  player["elo"] - opponent["elo"],
             "tourney_k_value":          metadata["tourney_k_value"],
             "best_of":                  metadata["best_of"],
@@ -184,3 +226,12 @@ def build_feature_row(
             "first_srv_win_rate_gap":   player["first_srv_win_rate"] - opponent["first_srv_win_rate"],
             "second_srv_win_rate_gap":  player["second_srv_win_rate"] - opponent["second_srv_win_rate"],
         }
+
+    if include_h2h:
+        if tournament_selected is None:
+            h2h_cutoff = f"{min(int(p1year_end), int(p2year_end))}-12-31"
+        else:
+            h2h_cutoff = metadata["start_date"]
+        feature_row["h2h_gap"] = _h2h_gap(df, player_name, opponent_name, h2h_cutoff)
+
+    return False, False, feature_row

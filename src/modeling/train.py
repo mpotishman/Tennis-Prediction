@@ -4,11 +4,52 @@
 # pass None to train on all available data (used for head-to-head matchup predictions).
 
 import pandas as pd
+from pandas.api.types import is_numeric_dtype
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from xgboost import XGBClassifier
+
+
+SURFACE_MAP = {"Hard": 0, "Clay": 1, "Grass": 2, "Carpet": 3}
+ROUND_MAP = {
+    "R128": 1, "R64": 2, "R32": 3, "R16": 4,
+    "QF": 5, "SF": 6, "F": 7,
+    "RR": 3, "BR": 6, "3rd/4th": 6,
+}
+HAND_MAP = {"R": 0, "L": 1}
+LEVEL_MAP = {"G": 4, "M": 3, "F": 3, "A": 2, "500": 2, "O": 2, "250": 1, "D": 1}
+
+EXCLUDED_FEATURE_COLUMNS = {
+    "result", "player_name", "opponent_name", "tourney_name", "tourney_date",
+    # Match-outcome columns would leak the result if used as features.
+    "player_won_games", "player_won_games_percentage",
+    "opponent_won_games", "opponent_won_games_percentage",
+    # Backtest bookkeeping columns, not model signals.
+    "match_id", "row_in_match",
+}
+
+
+def prepare_model_dataframe(df):
+    """Apply the categorical encodings expected by the sklearn/XGBoost models."""
+    df = df.copy()
+    df["tourney_date"] = pd.to_datetime(df["tourney_date"])
+    df["surface"] = df["surface"].map(SURFACE_MAP).fillna(-1)
+    df["round"] = df["round"].map(ROUND_MAP).fillna(-1)
+    df["player_hand"] = df["player_hand"].map(HAND_MAP).fillna(-1)
+    df["opponent_hand"] = df["opponent_hand"].map(HAND_MAP).fillna(-1)
+    df["tourney_level"] = df["tourney_level"].map(LEVEL_MAP).fillna(-1).astype(int)
+    return df
+
+
+def default_feature_columns(df):
+    """Return numeric model features, excluding labels, names, outcomes, and ids."""
+    return [
+        column for column in df.columns
+        if column not in EXCLUDED_FEATURE_COLUMNS
+        and is_numeric_dtype(df[column])
+    ]
 
 
 def random_forest(X_train, y_train):
@@ -60,25 +101,7 @@ def training(df, tournament_start_date=None, model_type="xgboost", features=None
     tournament_start_date: if provided, only trains on matches before this date.
     Pass None to train on all available data (used for matchup predictions).
     """
-    df = df.copy()
-    df["tourney_date"] = pd.to_datetime(df["tourney_date"])
-
-    surface_map = {"Hard": 0, "Clay": 1, "Grass": 2, "Carpet": 3}
-    df["surface"] = df["surface"].map(surface_map).fillna(-1)
-
-    round_map = {
-        "R128": 1, "R64": 2, "R32": 3, "R16": 4,
-        "QF": 5, "SF": 6, "F": 7,
-        "RR": 3, "BR": 6, "3rd/4th": 6,
-    }
-    df["round"] = df["round"].map(round_map).fillna(-1)
-
-    hand_map = {"R": 0, "L": 1}
-    df["player_hand"] = df["player_hand"].map(hand_map).fillna(-1)
-    df["opponent_hand"] = df["opponent_hand"].map(hand_map).fillna(-1)
-
-    level_map = {"G": 4, "M": 3, "F": 3, "A": 2, "500": 2, "O": 2, "250": 1, "D": 1}
-    df["tourney_level"] = df["tourney_level"].map(level_map).fillna(-1).astype(int)
+    df = prepare_model_dataframe(df)
 
     if tournament_start_date:
         train_df = df[df["tourney_date"] < pd.Timestamp(tournament_start_date)]
@@ -86,18 +109,15 @@ def training(df, tournament_start_date=None, model_type="xgboost", features=None
         train_df = df
 
     if features is None:
-        features = [
-            c for c in train_df.columns
-            if c not in {"result", "player_name", "opponent_name", "tourney_name", "tourney_date"}
-            and train_df[c].dtype in [float, int, "float64", "int64"]
-        ]
+        features = default_feature_columns(train_df)
 
-    X_train = train_df[features].fillna(train_df[features].median())
+    feature_fill_values = train_df[features].median().fillna(0)
+    X_train = train_df[features].fillna(feature_fill_values)
     y_train = train_df["result"]
 
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
-    scaler.feature_fill_values = X_train.median()
+    scaler.feature_fill_values = feature_fill_values
 
     if model_type == "xgboost":
         model = xgboost(X_train_scaled, y_train)

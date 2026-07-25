@@ -5,11 +5,12 @@ import {
 } from "@g-loot/react-tournament-brackets";
 import MatchBracketCard from "./MatchBracketCard";
 
-export default function BracketDisplay({ bracketInformation }) {
+export default function BracketDisplay({ bracketInformation, featuresSelected }) {
   // bracketInformation is {roundNum: {matchNum: {player1 win percentage, player2 win percentage}}}
   const containerRef = useRef(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
+  const [scoreline, setScoreline] = useState(null);
 
   useEffect(() => {
     const observer = new ResizeObserver(([entry]) => {
@@ -19,6 +20,22 @@ export default function BracketDisplay({ bracketInformation }) {
     if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, []);
+
+  async function handleMatchClick(p1, p2) {
+    if (!p1 || !p2) return; // guard TBD slots
+    const res = await fetch("/api/score", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ player1: p1, player2: p2,   featuresSelected,
+}),
+    });
+    const data = await res.json();
+    setScoreline(
+      data.error
+        ? data.error
+        : `${data.most_likely_winner} wins ${data.most_likely_score}`,
+    );
+  }
 
   const predictedWinners = {};
   for (const [round, matches] of Object.entries(bracketInformation)) {
@@ -107,10 +124,12 @@ export default function BracketDisplay({ bracketInformation }) {
         ref={containerRef}
         className="w-full max-h-[72vh] overflow-y-auto overflow-x-hidden"
       >
-    
         <SingleEliminationBracket
           matches={bracketMatchups}
           matchComponent={MatchBracketCard}
+          onPartyClick={(topParty, bottomParty) =>
+            handleMatchClick(topParty?.name, bottomParty?.name)
+          }
           options={{
             style: {
               boxHeight: Math.max(130, window.innerHeight / 8),
@@ -158,6 +177,8 @@ export default function BracketDisplay({ bracketInformation }) {
           }}
         />
       </div>
+      {scoreline}
     </div>
+    
   );
 }

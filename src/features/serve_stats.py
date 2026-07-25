@@ -25,15 +25,21 @@ def compute_rates(prefix, row):
 
     first_srv_win_rate = safe_div(first_won, first_in)
 
+    first_in_rate = safe_div(first_in, svpt)
+
     second_srv_win_rate = safe_div(
         second_won,
         svpt - first_in
     )
+    
+    p_serve = first_in_rate * first_srv_win_rate + (1 - first_in_rate) * second_srv_win_rate
 
     return (
         hold_rate,
         first_srv_win_rate,
-        second_srv_win_rate
+        second_srv_win_rate,
+        first_in_rate,
+        p_serve
     )
 
 
@@ -43,13 +49,17 @@ def add_serve_stats_to_csv(df):
         lambda: {
             "hold": deque(maxlen=WINDOW),
             "first": deque(maxlen=WINDOW),
-            "second": deque(maxlen=WINDOW)
+            "second": deque(maxlen=WINDOW),
+            "first_in": deque(maxlen=WINDOW),
+            "p_serve": deque(maxlen=WINDOW)
         }
     )
 
     hold_list = []
     first_list = []
     second_list = []
+    first_in_list = []
+    p_serve_list = []
 
     df = df.sort_values(["tourney_date", "tourney_id", "match_num"])
 
@@ -69,10 +79,14 @@ def add_serve_stats_to_csv(df):
         hold_list.append(get_avg(winner, "hold"))
         first_list.append(get_avg(winner, "first"))
         second_list.append(get_avg(winner, "second"))
+        first_in_list.append(get_avg(winner, "first_in"))
+        p_serve_list.append(get_avg(winner, "p_serve"))
 
         hold_list.append(get_avg(loser, "hold"))
         first_list.append(get_avg(loser, "first"))
         second_list.append(get_avg(loser, "second"))
+        first_in_list.append(get_avg(loser, "first_in"))
+        p_serve_list.append(get_avg(loser, "p_serve"))
 
         # ---- compute current match rates ----
 
@@ -82,10 +96,14 @@ def add_serve_stats_to_csv(df):
         player_history[winner]["hold"].append(w_rates[0])
         player_history[winner]["first"].append(w_rates[1])
         player_history[winner]["second"].append(w_rates[2])
+        player_history[winner]["first_in"].append(w_rates[3])
+        player_history[winner]["p_serve"].append(w_rates[4])
 
         player_history[loser]["hold"].append(l_rates[0])
         player_history[loser]["first"].append(l_rates[1])
         player_history[loser]["second"].append(l_rates[2])
+        player_history[loser]["first_in"].append(l_rates[3])
+        player_history[loser]["p_serve"].append(l_rates[4])
 
     df["winner_hold_rate_last20"] = hold_list[0::2]
     df["loser_hold_rate_last20"] = hold_list[1::2]
@@ -95,5 +113,11 @@ def add_serve_stats_to_csv(df):
 
     df["winner_second_srv_win_rate_last20"] = second_list[0::2]
     df["loser_second_srv_win_rate_last20"] = second_list[1::2]
+
+    df["winner_first_in_rate_last20"] = first_in_list[0::2]
+    df["loser_first_in_rate_last20"] = first_in_list[1::2]
+
+    df["winner_p_serve_last20"] = p_serve_list[0::2]
+    df["loser_p_serve_last20"] = p_serve_list[1::2]
 
     return df

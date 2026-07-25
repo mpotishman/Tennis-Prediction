@@ -63,7 +63,7 @@ export default function MatchBracketCard({
             hovered={topHovered}
             onEnter={() => topParty?.id != null && onMouseEnter(topParty.id)}
             onLeave={onMouseLeave}
-            onClick={onPartyClick ? () => onPartyClick(topParty, topWon) : undefined}
+            onClick={onPartyClick ? () => onPartyClick(topParty, bottomParty) : undefined}
           />
 
           {/* divider */}
@@ -75,7 +75,7 @@ export default function MatchBracketCard({
             hovered={bottomHovered}
             onEnter={() => bottomParty?.id != null && onMouseEnter(bottomParty.id)}
             onLeave={onMouseLeave}
-            onClick={onPartyClick ? () => onPartyClick(bottomParty, bottomWon) : undefined}
+            onClick={onPartyClick ? () => onPartyClick(topParty, bottomParty) : undefined}
           />
         </div>
       </div>

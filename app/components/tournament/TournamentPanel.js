@@ -158,9 +158,10 @@ export default function TournamentPanel({
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-col justify-center">
       <div ref={containerRef} className="flex justify-center">
-        <div className="relative">
+        <div className="flex relative">
           <input
-            className="rounded-full px-4 py-2 text-sm font-semibold uppercase tracking-widest bg-transparent border border-stone-50/40 text-stone-50 placeholder:text-stone-400 focus:outline-none focus:border-stone-50"
+            size={Math.min(selectedTournament.length + 5, 26)}
+            className="text-center rounded-full px-4 py-2 text-sm font-semibold uppercase tracking-widest bg-transparent border border-stone-50/40 text-stone-50 placeholder:text-stone-400 focus:outline-none focus:border-stone-50"
             value={selectedTournament}
             onChange={(e) => {
               setSelectedTournament(e.target.value);
@@ -169,7 +170,6 @@ export default function TournamentPanel({
             onFocus={() => setOpen(true)}
             placeholder="Select Tournament"
           />
-
           {open && (
             <ul className="absolute z-10 w-full mt-2 rounded-xl border border-stone-50/20 bg-stone-900/90 backdrop-blur-sm max-h-48 overflow-y-auto">
               {tournaments.map((tournament) => (
@@ -288,14 +288,15 @@ export default function TournamentPanel({
                       >
                         <p className="m-0">
                           The percentage is how likely each player goes through.
-                          Later rounds don&apos;t add up to 100% due to potential
-                          upsets in other simulations.
+                          Later rounds don&apos;t add up to 100% due to
+                          potential upsets in other simulations.
                         </p>
                         {Array.isArray(badMatchups) &&
                           badMatchups.length > 0 && (
                             <>
                               <p className="mt-3 mb-1 font-semibold">
-                                First-round matchups where at least one player has no data:
+                                First-round matchups where at least one player
+                                has no data:
                               </p>
                               <ul className="m-0 pl-4">
                                 {badMatchups.map((m, i) => (
@@ -308,7 +309,9 @@ export default function TournamentPanel({
                                   </li>
                                 ))}
                                 <p className="mt-3 mb-1 font-semibold">
-                                  Players with no prior data have a 25% chance of advancing. If both players have no prior data, the winner is decided by a coin toss.
+                                  Players with no prior data have a 25% chance
+                                  of advancing. If both players have no prior
+                                  data, the winner is decided by a coin toss.
                                 </p>
                               </ul>
                             </>
@@ -317,7 +320,10 @@ export default function TournamentPanel({
                     )}
                   </div>
                 </div>
-                <BracketDisplay bracketInformation={predictedBracket} />
+                <BracketDisplay
+                  bracketInformation={predictedBracket}
+                  featuresSelected={selectedFeatures}
+                />
               </>
             )}
           </div>

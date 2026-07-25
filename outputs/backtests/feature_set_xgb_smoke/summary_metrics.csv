@@ -1,0 +1,2 @@
+feature_set,model_type,test_year,num_matches,accuracy,log_loss,brier_score
+elo_only,xgboost,2019,2721,0.6012495406100699,0.6709569601828806,0.23774140911755198

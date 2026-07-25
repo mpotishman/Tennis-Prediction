@@ -32,6 +32,7 @@ def get_match_probability(
         df, p1, p2, round_num, p1year_end, p2year_end,
         player_lookup=player_lookup_cache,
         tournament_selected=tournament_selected,
+        include_h2h="h2h_gap" in features,
     )
 
     if players_comparison is None:
