@@ -12,6 +12,14 @@ const SUMMARY_FILE = path.join(
   "summary_metrics.csv",
 );
 
+const BASELINE_FILE = path.join(
+  process.cwd(),
+  "outputs",
+  "backtests",
+  "baselines",
+  "overall_metrics.csv",
+);
+
 const FEATURE_SET_ORDER = [
   "full",
   "elo_only",
@@ -44,11 +52,46 @@ function parseSummaryCsv(csvText) {
   });
 }
 
+function optionalNumber(value) {
+  if (value === undefined || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseBaselineCsv(csvText) {
+  const lines = csvText.trim().split(/\r?\n/);
+  const headers = lines[0].split(",");
+
+  return lines.slice(1).map((line) => {
+    const values = line.split(",");
+    const row = Object.fromEntries(
+      headers.map((header, index) => [header, values[index]]),
+    );
+
+    return {
+      method: row.method,
+      label: row.label,
+      num_matches: Number(row.num_matches),
+      coverage: Number(row.coverage),
+      accuracy: Number(row.accuracy),
+      log_loss: optionalNumber(row.log_loss),
+      brier_score: optionalNumber(row.brier_score),
+    };
+  });
+}
+
 export async function GET() {
   try {
-    const csvText = await readFile(SUMMARY_FILE, "utf8");
+    const [csvText, baselineText] = await Promise.all([
+      readFile(SUMMARY_FILE, "utf8"),
+      readFile(BASELINE_FILE, "utf8").catch(() => null),
+    ]);
 
     const summary = parseSummaryCsv(csvText);
+    const baselines = baselineText ? parseBaselineCsv(baselineText) : [];
 
     const {
       grouped,
@@ -57,8 +100,12 @@ export async function GET() {
 
     return Response.json({
       source: "outputs/backtests/feature_sets/summary_metrics.csv",
+      baselineSource: baselineText
+        ? "outputs/backtests/baselines/overall_metrics.csv"
+        : null,
       summary: grouped,
       statData: statData,
+      baselines,
     });
   } catch (error) {
     return Response.json(

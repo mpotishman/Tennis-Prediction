@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { getPythonExecutable } from "@/app/lib/python";
 
 const execFileAsync = promisify(execFile);
 
@@ -18,7 +19,7 @@ export async function POST(request) {
     } = await request.json();
 
     const { stdout } = await execFileAsync(
-      "python3",
+      getPythonExecutable(),
       [
         "src/scripts/web_matchup.py",
         player1,

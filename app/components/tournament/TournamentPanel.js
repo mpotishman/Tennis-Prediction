@@ -23,6 +23,7 @@ import BracketDisplay from "./BracketDisplay";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
 const tournaments = [
+  "2026 US Open",
   "2026 Wimbledon",
   "2026 Australian Open",
   "2026 Roland Garros",
@@ -129,6 +130,20 @@ export default function TournamentPanel({
       });
 
       const data = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || "Simulation failed.");
+      }
+
+      if (
+        !data.winner ||
+        !data.tournament ||
+        typeof data.winPct !== "number" ||
+        !data.predicted_bracket
+      ) {
+        throw new Error("The simulation returned an incomplete result.");
+      }
+
       setResults(data.results);
       setResultText(
         `${data.modelLabel} suggests ${data.winner} wins the ${data.tournament} ${data.winPct}% of the time!`,
@@ -137,8 +152,13 @@ export default function TournamentPanel({
       console.log("Raw bad matchups:", data.bad_matchups);
       setBadMatchups(data.bad_matchups ?? null);
       setPredictedBracket(data.predicted_bracket);
-    } catch {
-      setError("Could not run simulation right now.");
+    } catch (simulationError) {
+      setResults(null);
+      setPredictedBracket(null);
+      setBadMatchups(null);
+      setError(
+        simulationError.message || "Could not run simulation right now.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -246,6 +266,12 @@ export default function TournamentPanel({
           noneSelected={noneSelected}
         />
       </div>
+
+      {error && !resultText && (
+        <div className="flex justify-center">
+          <SimulationResult resultText="" error={error} />
+        </div>
+      )}
 
       {resultText && (
         <div>

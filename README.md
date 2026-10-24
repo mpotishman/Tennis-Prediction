@@ -40,3 +40,25 @@ Hover the **?** icons throughout the app for plain-English explanations of the t
 
 <img width="1334" height="800" alt="image" src="https://github.com/user-attachments/assets/eee685d1-dd88-4a0d-93bb-663bd55609d3" />
 
+## Deploying the interactive app
+
+The repository includes a Docker deployment for the complete Next.js and Python
+application. The large processed dataset is intentionally not committed to Git.
+At startup, the container downloads it from `TENNIS_DATA_URL` before accepting
+traffic.
+
+1. Compress `data/processed/combined.csv` with `gzip`, then upload
+   `combined.csv.gz` somewhere that provides a direct download URL (a GitHub
+   Release asset is suitable for a public repository).
+2. In Render, create a **Blueprint** from this repository. Render will read
+   `render.yaml` and build the included `Dockerfile`.
+3. Set the secret environment variable `TENNIS_DATA_URL` to that direct URL.
+4. Optionally set `TENNIS_DATA_SHA256` to the SHA-256 of the original,
+   uncompressed `combined.csv`. This makes startup reject a corrupt download.
+5. Deploy. Render checks `/api/health`; it reports ready only after the dataset
+   is present.
+
+For a local production test, copy `.env.example` to an untracked environment
+file, fill in `TENNIS_DATA_URL`, then build and run the Docker image. Local
+development continues to use `data/processed/combined.csv` exactly as before.
+

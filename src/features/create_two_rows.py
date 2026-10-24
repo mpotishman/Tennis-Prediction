@@ -13,6 +13,16 @@ def create_two_rows(df) -> pd.DataFrame:
     rows = []
 
     for _, match in df.iterrows():
+        total_games = match["winner_games"] + match["loser_games"]
+        if pd.notna(total_games) and total_games > 0:
+            winner_games_percentage = (match["winner_games"] / total_games) * 100
+            loser_games_percentage = (match["loser_games"] / total_games) * 100
+        else:
+            # Walkovers, abandoned matches, and unparseable historical scores
+            # do not contain enough information for a games-won percentage.
+            winner_games_percentage = float("nan")
+            loser_games_percentage = float("nan")
+
         tournament_information = {
             "tourney_name":    match["tourney_name"],
             "surface":         match["surface"],
@@ -60,7 +70,7 @@ def create_two_rows(df) -> pd.DataFrame:
             "player_p_serve":            match["winner_p_serve_last20"],
             "player_winrate":            match["player_winrate_last_10"],
             "player_won_games":          match["winner_games"],
-            "player_won_games_percentage": (match["winner_games"]/(match["winner_games"] + match["loser_games"])) * 100,
+            "player_won_games_percentage": winner_games_percentage,
                         
             "opponent_name":             match["loser_name"],
             "opponent_hand":             match["loser_hand"],
@@ -81,7 +91,7 @@ def create_two_rows(df) -> pd.DataFrame:
             "opponent_p_serve":          match["loser_p_serve_last20"],
             "opponent_winrate":          match["opponent_winrate_last_10"],
             "opponent_won_games":          match["loser_games"],
-            "opponent_won_games_percentage": (match["loser_games"]/(match["winner_games"] + match["loser_games"])) * 100,
+            "opponent_won_games_percentage": loser_games_percentage,
             
             "elo_gap":                   elo_gap,
             "winrate_gap":               winrate_gap,
@@ -118,7 +128,7 @@ def create_two_rows(df) -> pd.DataFrame:
             "player_p_serve":            match["loser_p_serve_last20"],
             "player_winrate":            match["opponent_winrate_last_10"],
             "player_won_games":          match["loser_games"],
-            "player_won_games_percentage": (match["loser_games"]/(match["winner_games"] + match["loser_games"])) * 100,
+            "player_won_games_percentage": loser_games_percentage,
             
             "opponent_name":             match["winner_name"],
             "opponent_hand":             match["winner_hand"],
@@ -139,7 +149,7 @@ def create_two_rows(df) -> pd.DataFrame:
             "opponent_p_serve":          match["winner_p_serve_last20"],
             "opponent_winrate":          match["player_winrate_last_10"],
             "opponent_won_games":          match["winner_games"],
-            "opponent_won_games_percentage": (match["winner_games"]/(match["winner_games"] + match["loser_games"])) * 100,
+            "opponent_won_games_percentage": winner_games_percentage,
             
             "elo_gap":                   -elo_gap,
             "winrate_gap":               -winrate_gap,

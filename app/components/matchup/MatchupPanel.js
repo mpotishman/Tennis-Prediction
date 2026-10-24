@@ -93,11 +93,11 @@ export default function MatchupPanel({
 
   const bothSelected = player1 && player2;
 
-  const [playerYears, setPlayerYears] = useState(2018);
+  const [playerYears, setPlayerYears] = useState({});
 
-  // Chart sizing via ResizeObserver
-  const chartRef = useRef(null);
-  const [chartHeight, setChartHeight] = useState(0);
+  // Size the chart from the visible space below the prediction sentence.
+  const resultRef = useRef(null);
+  const [chartHeight, setChartHeight] = useState(320);
 
   // make the function to call to api/matchup
   async function runMatchup() {
@@ -143,24 +143,57 @@ export default function MatchupPanel({
     fetch("/api/players")
       .then((r) => r.json())
       .then((data) => {
-        setPlayerYears(data); // { "Roger Federer": 2000, ... }
+        setPlayerYears(data);
         setPlayers(sortPlayers(Object.keys(data)));
       });
   }, []);
 
   useEffect(() => {
-    const observer = new ResizeObserver(([entry]) => {
-      setChartHeight(entry.contentRect.height);
-    });
-    if (chartRef.current) observer.observe(chartRef.current);
-    return () => observer.disconnect();
-  }, []);
+    const range = playerYears[player1];
+    if (range) {
+      setPlayer1YearStart((year) =>
+        Math.min(Math.max(year, range.minYear), range.maxYear),
+      );
+    }
+  }, [player1, playerYears, setPlayer1YearStart]);
+
+  useEffect(() => {
+    const range = playerYears[player2];
+    if (range) {
+      setPlayer2YearStart((year) =>
+        Math.min(Math.max(year, range.minYear), range.maxYear),
+      );
+    }
+  }, [player2, playerYears, setPlayer2YearStart]);
+
+  useEffect(() => {
+    if (!ran || !resultRef.current) return;
+
+    function updateChartHeight() {
+      const resultBottom = resultRef.current.getBoundingClientRect().bottom;
+      const remainingHeight = Math.max(window.innerHeight - resultBottom, 0);
+
+      // Use 75% of the visible area below the result, while retaining a useful
+      // minimum on short screens and preventing an enormous chart on tall ones.
+      setChartHeight(
+        Math.max(220, Math.min(680, Math.round(remainingHeight * 0.75))),
+      );
+    }
+
+    updateChartHeight();
+    window.addEventListener("resize", updateChartHeight);
+
+    const observer = new ResizeObserver(updateChartHeight);
+    observer.observe(resultRef.current);
+
+    return () => {
+      window.removeEventListener("resize", updateChartHeight);
+      observer.disconnect();
+    };
+  }, [ran, resultText]);
 
   return (
-    <div
-      className="relative flex flex-col items-center min-h-screen overflow-x-hidden gap-2"
-      style={{ paddingBottom: chartHeight / 2 }}
-    >
+    <div className="flex w-full flex-col items-center gap-2 overflow-x-hidden">
       <div className="ui-panel border border-stone-50/10 rounded-full px-6 py-2 text-[#f5f0de]/60 text-xs tracking-wide italic text-center max-w-xl">
         Note: This simulation uses the latest available data for each player.
         Choosing a retired player will use stats from their last recorded match.
@@ -173,15 +206,15 @@ export default function MatchupPanel({
             value={player1}
             onSelect={(p) => {
               setPlayer1(p);
-              setPlayer1YearStart(2026);
+              setPlayer1YearStart(playerYears[p]?.maxYear ?? 2026);
             }}
           />
           {player1 && (
             <>
               <input
                 type="range"
-                min={playerYears[player1]}
-                max={2026}
+                min={playerYears[player1]?.minYear}
+                max={playerYears[player1]?.maxYear}
                 value={player1YearStart}
                 onChange={(e) => setPlayer1YearStart(Number(e.target.value))}
                 className="w-full accent-[#dcb24d] cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
@@ -202,15 +235,15 @@ export default function MatchupPanel({
             value={player2}
             onSelect={(p) => {
               setPlayer2(p);
-              setPlayer2YearStart(2026);
+              setPlayer2YearStart(playerYears[p]?.maxYear ?? 2026);
             }}
           />
           {player2 && (
             <>
               <input
                 type="range"
-                min={playerYears[player2]}
-                max={2026}
+                min={playerYears[player2]?.minYear}
+                max={playerYears[player2]?.maxYear}
                 value={player2YearStart}
                 onChange={(e) => setPlayer2YearStart(Number(e.target.value))}
                 className="w-full accent-[#dcb24d] cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
@@ -227,19 +260,25 @@ export default function MatchupPanel({
         <MatchupRunButton runMatchup={runMatchup} isLoading={isLoading} bothSelected={bothSelected} />
       </div>
 
-      <SimulationResult resultText={resultText} error={error} />
+      <div ref={resultRef}>
+        <SimulationResult resultText={resultText} error={error} />
+      </div>
+
       {ran && (
-        <div
-          ref={chartRef}
-          className="absolute bottom-0 left-0 right-0 pointer-events-none"
-          style={{ transform: "translateY(-2%)" }}
-        >
-          <MatchupChart
-            player1={chartPlayer1}
-            player2={chartPlayer2}
-            player1winPct={player1winPct}
-            player2winPct={player2winPct}
-          />
+        <div className="mt-4 flex w-full justify-center pointer-events-none">
+          <div
+            style={{
+              height: `${chartHeight}px`,
+              width: `min(100%, ${Math.round(chartHeight * 2.2)}px)`,
+            }}
+          >
+            <MatchupChart
+              player1={chartPlayer1}
+              player2={chartPlayer2}
+              player1winPct={player1winPct}
+              player2winPct={player2winPct}
+            />
+          </div>
         </div>
       )}
     </div>

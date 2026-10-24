@@ -9,6 +9,7 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from evaluation.backtest_runner import run_backtest
+from evaluation.baseline_runner import run_baseline_backtest
 from modeling.feature_sets import DEFAULT_FEATURE_SET, available_feature_sets
 
 
@@ -38,6 +39,17 @@ def parse_args():
         default=str(PROJECT_ROOT / "outputs" / "backtests"),
     )
 
+    baseline_parser = subparsers.add_parser(
+        "baselines",
+        help="Compare simple baselines on walk-forward historical matches.",
+    )
+    baseline_parser.add_argument("--start-year", type=int, default=2009)
+    baseline_parser.add_argument("--end-year", type=int, default=2025)
+    baseline_parser.add_argument(
+        "--output-dir",
+        default=str(PROJECT_ROOT / "outputs" / "backtests" / "baselines"),
+    )
+
     return parser.parse_args()
 
 
@@ -57,6 +69,19 @@ def main():
         print(f"Predictions: {result['predictions_path']}")
         print(f"Summary: {result['summary_path']}")
         print("\nSummary metrics:")
+        print(result["summary"].to_string(index=False))
+
+    if args.command == "baselines":
+        result = run_baseline_backtest(
+            start_year=args.start_year,
+            end_year=args.end_year,
+            output_dir=args.output_dir,
+        )
+
+        print("\nBaseline evaluation complete.")
+        print(f"Predictions: {result['predictions_path']}")
+        print(f"Summary: {result['summary_path']}")
+        print("\nOverall baseline metrics:")
         print(result["summary"].to_string(index=False))
 
 

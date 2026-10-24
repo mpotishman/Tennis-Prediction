@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { getPythonExecutable } from "@/app/lib/python";
 
 const execFileAsync = promisify(execFile);
 
@@ -10,7 +11,7 @@ export async function POST(request) {
   try {
     const { player1, player2, modelType = "xgboost", featuresSelected } = await request.json();
 
-    const { stdout } = await execFileAsync("python3", ["src/scripts/web_scoreline.py", player1, player2, modelType, JSON.stringify(featuresSelected)], {
+    const { stdout } = await execFileAsync(getPythonExecutable(), ["src/scripts/web_scoreline.py", player1, player2, modelType, JSON.stringify(featuresSelected)], {
       cwd: process.cwd(),
       maxBuffer: 1024 * 1024 * 10,
       timeout: 120000,

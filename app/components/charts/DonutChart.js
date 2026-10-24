@@ -29,6 +29,8 @@ export default function DonutChart({ player1, player2, player1Pct, player2Pct })
   };
 
   const options = {
+    responsive: true,
+    maintainAspectRatio: false,
     circumference: 180,
     rotation: -90,
     cutout: "70%",

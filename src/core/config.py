@@ -1,10 +1,16 @@
 # App-wide constants: ELO K-values, data path, and legacy date references used
 # by the player lookup feature builder.
 
+import os
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATA_PATH = PROJECT_ROOT / "data" / "processed" / "combined.csv"
+DATA_PATH = Path(
+    os.environ.get(
+        "TENNIS_DATA_PATH",
+        PROJECT_ROOT / "data" / "processed" / "combined.csv",
+    )
+).expanduser()
 
 # Legacy date constants still referenced by features/build_player_lookup.py.
 AO_2026_START = "2026-01-18"

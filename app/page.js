@@ -21,6 +21,7 @@ import TournamentPanel from "./components/tournament/TournamentPanel";
 import MatchupPanel from "./components/matchup/MatchupPanel";
 import ModelEvaluationPanel from "./components/evaluation/ModelEvaluationPanel";
 import styles from "./page.module.css";
+import TodaysPanel from "./components/todaysMatches/TodaysPanel";
 
 const FEATURE_MAPPING = {
   "Match Context": {
@@ -85,8 +86,15 @@ export default function HomePage() {
   const [mPlayer1YearStart, setMPlayer1YearStart] = useState(2026);
   const [mPlayer2YearStart, setMPlayer2YearStart] = useState(2026);
 
-  const simulatorContent =
-    simType === 1 ? (
+  //  --- Todays Matchups State ---
+  const [matches, setMatches] = useState([]);
+  const [TPerror, setTPerror] = useState("");
+  const [futurePredictions, setFuturePredictions] = useState({});
+
+  let simulatorContent;
+
+  if (simType === 1) {
+    simulatorContent = (
       <TournamentPanel
         selectedModel={selectedModel}
         setSelectedModel={setSelectedModel}
@@ -106,7 +114,9 @@ export default function HomePage() {
         badMatchups={badMatchups}
         setBadMatchups={setBadMatchups}
       />
-    ) : (
+    );
+  } else if (simType === 2) {
+    simulatorContent = (
       <MatchupPanel
         selectedModel={selectedModel}
         setSelectedModel={setSelectedModel}
@@ -137,6 +147,18 @@ export default function HomePage() {
         setPlayer2YearStart={setMPlayer2YearStart}
       />
     );
+  } else {
+    simulatorContent = (
+      <TodaysPanel
+        error={TPerror}
+        setError={setTPerror}
+        matches={matches}
+        setMatches={setMatches}
+        predictionsByMatchId={futurePredictions}
+        setPredictionsByMatchId={setFuturePredictions}
+      />
+    );
+  }
 
   return (
     <main
@@ -185,7 +207,13 @@ export default function HomePage() {
                 <TabButton onClick={() => setSimType(2)} isActive={simType === 2}>
                   Simulate Matchup
                 </TabButton>
+                <TabButton onClick={() => setSimType(3)} isActive={simType === 3}>
+                  Future Predictions
+                </TabButton>
               </div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-50/55">
+                Model data through 18 October 2026
+              </p>
               <div className="w-full">{simulatorContent}</div>
             </>
           ) : (

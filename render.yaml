@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: tennis-predictor
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: TENNIS_DATA_URL
+        sync: false
+      - key: TENNIS_DATA_SHA256
+        sync: false

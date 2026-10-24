@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import EvaluationResults from "./EvaluationResults";
+import BaselineResults from "./BaselineResults";
 import LineChart from "../charts/LineChart";
 
 export default function ModelEvaluationPanel() {
   const [backtestData, setBacktestData] = useState(null);
   const [error, setError] = useState("");
   const [statData, setStatData] = useState(null);
+  const [baselines, setBaselines] = useState([]);
 
   const [openDropdown, setOpenDropdown] = useState("2025");
 
@@ -25,6 +27,7 @@ export default function ModelEvaluationPanel() {
         } else {
           setBacktestData(data.summary);
           setStatData(data.statData);
+          setBaselines(data.baselines ?? []);
         }
       })
       .catch(() => {
@@ -89,6 +92,8 @@ export default function ModelEvaluationPanel() {
         measures how close the predicted probabilities are to the actual
         outcomes, where lower is better.
       </div>
+
+      <BaselineResults rows={baselines} />
 
       {Object.entries(backtestData)
         .reverse()
